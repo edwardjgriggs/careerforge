@@ -22,6 +22,9 @@ export default defineConfig({
       '@careerforge/collector-git': fileURLToPath(
         new URL('./collectors/git/src/index.ts', import.meta.url),
       ),
+      '@careerforge/collector-session': fileURLToPath(
+        new URL('./collectors/session/src/index.ts', import.meta.url),
+      ),
     },
   },
   test: {

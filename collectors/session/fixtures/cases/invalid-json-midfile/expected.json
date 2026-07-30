@@ -1,0 +1,53 @@
+{
+  "drafts": [
+    {
+      "collectorId": "session",
+      "sourceUri": "session://1e4a2c00-0000-4000-8000-000000000012",
+      "kind": "session.fragment",
+      "evidenceClass": "imported",
+      "sensitivity": "restricted",
+      "occurredAt": "2026-07-11T09:00:00.000Z",
+      "occurredEnd": "2026-07-11T09:15:00.000Z",
+      "context": {
+        "projectKey": "acme-api",
+        "workspace": "/home/dev/acme-api",
+        "stream": "main"
+      },
+      "title": "Convert the nightly report job to run hourly.",
+      "summary": null,
+      "excerpt": "Convert the nightly report job to run hourly.",
+      "payloadRef": null,
+      "attributes": {
+        "sessionId": "1e4a2c00-0000-4000-8000-000000000012",
+        "transcriptSha256": "398682b812c858bcace8cc6faa8ca47b3e0678bdced3d79cc7fdf9b579d72cad",
+        "transcriptBytes": 923,
+        "recordCount": 2,
+        "userPrompts": 1,
+        "humanPrompts": 1,
+        "programmaticPrompts": 0,
+        "promptAuthorship": "human",
+        "assistantMessages": 1,
+        "toolCalls": 0,
+        "tools": [],
+        "workspacePaths": [],
+        "pathsOutsideWorkspace": 0,
+        "fileExtensions": [],
+        "gitOperations": [],
+        "gitCommandCount": 0,
+        "skills": [],
+        "plugins": [],
+        "mcpServers": [],
+        "models": ["claude-opus-5"],
+        "branches": ["main"],
+        "entrypoints": ["cli"],
+        "promptSources": ["typed"],
+        "durationMinutes": 15
+      },
+      "groupingHint": "acme-api:main:2026-W28",
+      "collectorVersion": "1.0.0",
+      "sourceFormatVersion": "2.1.198"
+    }
+  ],
+  "skipped": [],
+  "drift": ["lines that were not valid JSON"]
+}

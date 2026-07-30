@@ -1,8 +1,9 @@
 import { existsSync } from 'node:fs';
 
 import { toInstant, type Instant } from '@careerforge/domain';
-import { formatReport, runCollection } from '@careerforge/collect';
+import { formatReport, runCollection, type SourceRef } from '@careerforge/collect';
 import { GitCollector } from '@careerforge/collector-git';
+import { SessionCollector, defaultTranscriptRoot } from '@careerforge/collector-session';
 import {
   closeDatabase,
   CursorStore,
@@ -190,33 +191,78 @@ export function timeline(
   });
 }
 
+/**
+ * The collectors this build ships with.
+ *
+ * A registry now that there are two to choose between, and no earlier: with
+ * one implementation it would have been designed against a guess. Each entry
+ * knows only where to look by default and what to call the things it finds —
+ * everything else is the collector's own business.
+ */
+const COLLECTORS = {
+  git: {
+    create: () => new GitCollector(),
+    describes: 'repositories',
+    defaultPath: () => process.cwd(),
+    hint: 'Point --path at a repository, or at a directory containing some.',
+  },
+  session: {
+    create: () => new SessionCollector(),
+    describes: 'AI coding session projects',
+    defaultPath: defaultTranscriptRoot,
+    hint: 'Sessions are read from ~/.claude/projects. Pass --path to look elsewhere.',
+  },
+} as const;
+
+export type CollectorName = keyof typeof COLLECTORS;
+
+export const COLLECTOR_NAMES = Object.keys(COLLECTORS) as readonly CollectorName[];
+
+export function isCollectorName(value: string): value is CollectorName {
+  return Object.prototype.hasOwnProperty.call(COLLECTORS, value);
+}
+
 export interface CollectOptions {
-  /** Directory to collect from. A repository, or a directory of them. */
-  readonly path: string;
+  /** Which collectors to run. Defaults to all of them. */
+  readonly collectors?: readonly CollectorName[];
+  /**
+   * Where to collect from. Overrides every selected collector's default, so it
+   * is only useful with a single `--collector`.
+   */
+  readonly path?: string;
   /** Ignore the stored cursor and replay everything. */
   readonly backfill: boolean;
   readonly limit?: number;
 }
 
 /**
- * Collect evidence from local repositories.
+ * Collect evidence from local sources.
  *
- * Only the Git collector for now. A registry keyed by `--collector` arrives
- * when there is a second one to choose between; inventing one now would mean
- * designing it against a single implementation.
+ * Runs every collector by default. Git proves the outcome and sessions prove
+ * the reasoning, and a user who has to know to ask for the second one will not
+ * ask for it.
  */
 export async function collect(
   env: NodeJS.ProcessEnv,
   options: CollectOptions,
 ): Promise<CommandResult> {
   const paths = resolvePaths(env);
-  const collector = new GitCollector();
+  const selected = options.collectors ?? COLLECTOR_NAMES;
 
-  const sources = await collector.discover(options.path);
-  if (sources.length === 0) {
+  const found: { name: CollectorName; source: SourceRef }[] = [];
+  for (const name of selected) {
+    const entry = COLLECTORS[name];
+    const location = options.path ?? entry.defaultPath();
+    for (const source of await entry.create().discover(location)) {
+      found.push({ name, source });
+    }
+  }
+
+  if (found.length === 0) {
+    const where = options.path ?? 'the default locations';
     return failure(
-      `No Git repositories found at ${options.path}.`,
-      'Point --path at a repository, or at a directory containing some.',
+      `Nothing to collect from ${where}.`,
+      selected.map((name) => COLLECTORS[name].hint).join(' '),
     );
   }
 
@@ -227,9 +273,9 @@ export async function collect(
     const reports: string[] = [];
     let totalNew = 0;
 
-    for (const source of sources) {
+    for (const { name, source } of found) {
       const report = await runCollection({
-        collector,
+        collector: COLLECTORS[name].create(),
         scope: source.scope,
         store,
         cursors,
@@ -247,7 +293,7 @@ export async function collect(
 
     return ok(
       [
-        `Collected from ${sources.length} repositor${sources.length === 1 ? 'y' : 'ies'}:`,
+        `Collected from ${found.length} source(s):`,
         '',
         ...reports,
         '',

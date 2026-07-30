@@ -1,0 +1,58 @@
+{
+  "drafts": [
+    {
+      "collectorId": "session",
+      "sourceUri": "session://1e4a2c00-0000-4000-8000-000000000007",
+      "kind": "session.fragment",
+      "evidenceClass": "imported",
+      "sensitivity": "restricted",
+      "occurredAt": "2026-07-07T13:00:00.000Z",
+      "occurredEnd": "2026-07-07T13:04:00.000Z",
+      "context": {
+        "projectKey": "acme-api",
+        "workspace": "/home/dev/acme-api",
+        "stream": "main"
+      },
+      "title": "Upgrade the database driver and check for breaking changes.",
+      "summary": null,
+      "excerpt": "Upgrade the database driver and check for breaking changes.",
+      "payloadRef": null,
+      "attributes": {
+        "sessionId": "1e4a2c00-0000-4000-8000-000000000007",
+        "transcriptSha256": "532c0c5c28acf7ed45674f77978f103bb3edcd86010bbebdfaba1df4a3c656fd",
+        "transcriptBytes": 1010,
+        "recordCount": 2,
+        "userPrompts": 1,
+        "humanPrompts": 1,
+        "programmaticPrompts": 0,
+        "promptAuthorship": "human",
+        "assistantMessages": 1,
+        "toolCalls": 0,
+        "tools": [],
+        "workspacePaths": [],
+        "pathsOutsideWorkspace": 0,
+        "fileExtensions": [],
+        "gitOperations": [],
+        "gitCommandCount": 0,
+        "skills": [],
+        "plugins": [],
+        "mcpServers": [],
+        "models": ["claude-opus-5"],
+        "branches": ["main"],
+        "entrypoints": ["cli"],
+        "promptSources": ["typed"],
+        "durationMinutes": 4
+      },
+      "groupingHint": "acme-api:main:2026-W28",
+      "collectorVersion": "1.0.0",
+      "sourceFormatVersion": "2.1.198"
+    }
+  ],
+  "skipped": [],
+  "drift": [
+    "unrecognised field on assistant: cacheTier",
+    "unrecognised field on assistant: costUsd",
+    "unrecognised field on user: conversationTier",
+    "unrecognised field on user: nudgeReason"
+  ]
+}

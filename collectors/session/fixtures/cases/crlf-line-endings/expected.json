@@ -1,0 +1,53 @@
+{
+  "drafts": [
+    {
+      "collectorId": "session",
+      "sourceUri": "session://1e4a2c00-0000-4000-8000-000000000019",
+      "kind": "session.fragment",
+      "evidenceClass": "imported",
+      "sensitivity": "restricted",
+      "occurredAt": "2026-07-17T16:00:00.000Z",
+      "occurredEnd": "2026-07-17T16:25:00.000Z",
+      "context": {
+        "projectKey": "acme-api",
+        "workspace": "/home/dev/acme-api",
+        "stream": "main"
+      },
+      "title": "Port the build script to PowerShell for the Windows agents.",
+      "summary": null,
+      "excerpt": "Port the build script to PowerShell for the Windows agents.",
+      "payloadRef": null,
+      "attributes": {
+        "sessionId": "1e4a2c00-0000-4000-8000-000000000019",
+        "transcriptSha256": "d3782af890f6daf256f67e7ded4b041d03837dab3f70043c1225b9b412e99031",
+        "transcriptBytes": 929,
+        "recordCount": 2,
+        "userPrompts": 1,
+        "humanPrompts": 1,
+        "programmaticPrompts": 0,
+        "promptAuthorship": "human",
+        "assistantMessages": 1,
+        "toolCalls": 0,
+        "tools": [],
+        "workspacePaths": [],
+        "pathsOutsideWorkspace": 0,
+        "fileExtensions": [],
+        "gitOperations": [],
+        "gitCommandCount": 0,
+        "skills": [],
+        "plugins": [],
+        "mcpServers": [],
+        "models": ["claude-opus-5"],
+        "branches": ["main"],
+        "entrypoints": ["cli"],
+        "promptSources": ["typed"],
+        "durationMinutes": 25
+      },
+      "groupingHint": "acme-api:main:2026-W29",
+      "collectorVersion": "1.0.0",
+      "sourceFormatVersion": "2.1.198"
+    }
+  ],
+  "skipped": [],
+  "drift": []
+}

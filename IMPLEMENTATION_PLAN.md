@@ -253,13 +253,13 @@ Collect the differentiating source, under the three mandatory constraints from `
 - `grouping_hint` = `cwd` + `gitBranch` + temporal bucket.
 
 ### Acceptance criteria
-- [ ] Collects from a real `~/.claude/projects` tree without throwing.
-- [ ] Unknown record types are skipped silently and counted in the `CollectionReport`.
-- [ ] Truncated final lines, invalid JSON lines, and unknown `version` values do not fail the run.
-- [ ] All emitted evidence defaults to `restricted`.
-- [ ] Raw transcript bytes are **never** copied into the database or `export/`.
-- [ ] Passes all seven conformance tests.
-- [ ] A 32 MB session file is processed with bounded memory (streaming, not full read).
+- [x] Collects from a real `~/.claude/projects` tree without throwing. *(1,214 transcripts, 1,198 emitted, 3.5 s)*
+- [x] Unknown record types are skipped silently and counted in the `CollectionReport`. *(via the `drift` channel — ADR-0016)*
+- [x] Truncated final lines, invalid JSON lines, and unknown `version` values do not fail the run.
+- [x] All emitted evidence defaults to `restricted`.
+- [x] Raw transcript bytes are **never** copied into the database or `export/`. *(asserted against a planted credential)*
+- [x] Passes the conformance suite. *(eight checks as of M4, not seven)*
+- [x] A 32 MB session file is processed with bounded memory (streaming, not full read).
 
 ### Tests
 - Fixtures for every observed record type, plus three synthetic unknown types.
@@ -272,6 +272,21 @@ Collect the differentiating source, under the three mandatory constraints from `
 Measured: 1,219 files, 328 MB, 30 days, **0 parse failures**. Streaming is mandatory — the largest observed file is 32 MB, and a naive `readFileSync` over a full corpus is a memory failure waiting for a heavy user.
 
 Subagent transcripts are absent from these files (`isSidechain` true on 0 of 57,206 records). Investigating `~/.claude/tasks/` is **out of scope** here; logged as open item.
+
+### What implementation found
+
+Three things the survey could not have known, each of which changed the design:
+
+1. **Claude Code deletes transcripts after 30 days by default** (`cleanupPeriodDays`, unset). The corpus boundary is exactly 30.0 days. Evidence therefore points at a file that will not exist next month, which is why the transcript hash is stored and why nothing is dropped on the assumption that it can be re-collected later.
+2. **93% of transcripts were driven by a program, not typed** (`promptSource: sdk`, 1,110 of 1,198). Their prompts read as problem statements and are not. See ADR-0017.
+3. **A resumed session opens with a model-written summary filed as a `user` record** (`isCompactSummary`). Read naively it becomes the title of the evidence. Found by the drift channel on the first real run, not by fixtures.
+
+Two ADRs came out of this milestone: **ADR-0016** (drift is reported, not just tolerated) and **ADR-0017** (source-authored is not human-authored).
+
+### Carried forward to M6
+
+- Programmatic sessions are collected with a derived title and no excerpt. Whether they belong in a Work Unit at all, or deserve a distinct kind, is a grouping decision.
+- 16 transcripts contained no prompt of any kind and were skipped. Expected; recorded here so the number is known rather than assumed.
 
 ---
 

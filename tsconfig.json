@@ -30,6 +30,9 @@
     },
     {
       "path": "collectors/git"
+    },
+    {
+      "path": "collectors/session"
     }
   ]
 }

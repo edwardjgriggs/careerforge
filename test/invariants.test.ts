@@ -277,4 +277,16 @@ describe('cross-cutting promises', () => {
       );
     }
   });
+
+  it('every ADR appears in the index', () => {
+    // The index had silently drifted four ADRs behind by M5. An index nobody
+    // can trust is worse than no index, because it answers "is that all of
+    // them?" with a confident no.
+    const adrDir = join(ROOT, 'docs/adr');
+    const index = readFileSync(join(adrDir, 'README.md'), 'utf8');
+    const missing = readdirSync(adrDir)
+      .filter((f) => /^\d{4}-.*\.md$/.test(f))
+      .filter((f) => !index.includes(`(${f})`));
+    expect(missing, 'ADRs not listed in docs/adr/README.md').toEqual([]);
+  });
 });

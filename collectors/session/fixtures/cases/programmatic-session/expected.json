@@ -1,0 +1,53 @@
+{
+  "drafts": [
+    {
+      "collectorId": "session",
+      "sourceUri": "session://1e4a2c00-0000-4000-8000-000000000021",
+      "kind": "session.fragment",
+      "evidenceClass": "imported",
+      "sensitivity": "restricted",
+      "occurredAt": "2026-07-24T03:00:00.000Z",
+      "occurredEnd": "2026-07-24T03:00:30.000Z",
+      "context": {
+        "projectKey": "acme-api",
+        "workspace": "/home/dev/acme-api",
+        "stream": "main"
+      },
+      "title": "Programmatic session in acme-api",
+      "summary": null,
+      "excerpt": null,
+      "payloadRef": null,
+      "attributes": {
+        "sessionId": "1e4a2c00-0000-4000-8000-000000000021",
+        "transcriptSha256": "5fd3fcef108749209043c09d11f2e0679bf1df8ee52e2641e4e9a29c7c8c7471",
+        "transcriptBytes": 1102,
+        "recordCount": 2,
+        "userPrompts": 1,
+        "humanPrompts": 0,
+        "programmaticPrompts": 1,
+        "promptAuthorship": "programmatic",
+        "assistantMessages": 1,
+        "toolCalls": 1,
+        "tools": ["Edit"],
+        "workspacePaths": ["migrations/004_add_index.sql"],
+        "pathsOutsideWorkspace": 0,
+        "fileExtensions": ["sql"],
+        "gitOperations": [],
+        "gitCommandCount": 0,
+        "skills": [],
+        "plugins": [],
+        "mcpServers": [],
+        "models": ["claude-opus-5"],
+        "branches": ["main"],
+        "entrypoints": ["sdk-cli"],
+        "promptSources": ["sdk"],
+        "durationMinutes": 0.5
+      },
+      "groupingHint": "acme-api:main:2026-W30",
+      "collectorVersion": "1.0.0",
+      "sourceFormatVersion": "2.1.220"
+    }
+  ],
+  "skipped": [],
+  "drift": []
+}

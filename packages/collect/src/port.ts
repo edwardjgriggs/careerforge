@@ -33,15 +33,28 @@ export type Cursor = string;
  * What a collector yields.
  *
  * `Architecture.md` §6.1 specifies evidence drafts and cursor advances. The
- * `skipped` and `unknown` events are how §6.3's CollectionReport gets its
- * numbers: tolerant parsing (ADR-0010) is only safe if what was skipped is
- * counted, because silent tolerance is silent data loss.
+ * remaining three are how §6.3's CollectionReport gets its numbers: tolerant
+ * parsing (ADR-0010) is only safe if what was tolerated is counted, because
+ * silent tolerance is silent data loss.
+ *
+ * The four are distinguished by what they are *about*:
+ *
+ *   evidence  an artifact became evidence
+ *   skipped   an artifact was examined and deliberately not emitted
+ *   unknown   an artifact was examined and not understood at all
+ *   drift     an observation about the *source format*, not about an artifact
+ *
+ * The first three count towards `seen`, because each concerns one source
+ * artifact. `drift` does not — it reports something noticed while reading
+ * artifacts already counted, and adding it to `seen` would inflate the tally
+ * of work done. See ADR-0016.
  */
 export type CollectorEvent =
   | { readonly kind: 'evidence'; readonly draft: EvidenceDraft }
   | { readonly kind: 'cursor'; readonly cursor: Cursor }
   | { readonly kind: 'skipped'; readonly reason: string }
-  | { readonly kind: 'unknown'; readonly recordType: string };
+  | { readonly kind: 'unknown'; readonly recordType: string }
+  | { readonly kind: 'drift'; readonly signal: string };
 
 export interface CollectorCapabilities {
   /** Can replay history. Every collector must: backfill is the acquisition model. */
@@ -107,6 +120,16 @@ export interface CollectionReport {
   readonly unchanged: number;
   readonly skipped: Readonly<Record<string, number>>;
   readonly unknownRecordTypes: Readonly<Record<string, number>>;
+  /**
+   * Source-format surprises: record types, fields, and shapes the collector
+   * did not recognise and therefore ignored.
+   *
+   * Tolerant parsing means never rejecting a newer format. Left there, it also
+   * means never *noticing* one — a field carrying real evidence could appear
+   * upstream and be dropped forever without a single line of output. This is
+   * how tolerance stays honest. See ADR-0016.
+   */
+  readonly drift: Readonly<Record<string, number>>;
   readonly cursor: Cursor | null;
 }
 
@@ -134,6 +157,17 @@ export function formatReport(report: CollectionReport): string {
     lines.push(
       `  unrecognised record types (ignored): ${unknown.map(([t, n]) => `${t} x${n}`).join(', ')}`,
     );
+  }
+
+  const drift = Object.entries(report.drift).sort();
+  if (drift.length > 0) {
+    // Printed, not buried. A collector that has started ignoring something new
+    // should say so on the run where it starts, not in a bug report months
+    // later about evidence that never appeared.
+    lines.push('  source format has changed since this collector was written:');
+    for (const [signal, count] of drift) {
+      lines.push(`    ${count} x ${signal}`);
+    }
   }
 
   return lines.join('\n');

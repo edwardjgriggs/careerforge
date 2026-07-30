@@ -1,7 +1,9 @@
 import {
+  COLLECTOR_NAMES,
   collect,
   exportCommand,
   init,
+  isCollectorName,
   rebuild,
   reindex,
   search,
@@ -46,15 +48,24 @@ function numericFlag(args: readonly string[], name: string, fallback: number): n
 
 const COMMANDS: Record<string, CommandSpec> = {
   collect: {
-    summary: 'Collect evidence from local Git repositories',
-    usage: 'careerforge collect [--path <dir>] [--backfill] [--limit <n>]',
-    example: 'careerforge collect --path ~/code --backfill',
-    run: (args, env) =>
-      collect(env, {
-        path: flag(args, 'path') ?? process.cwd(),
+    summary: 'Collect evidence from Git and your AI coding sessions',
+    usage:
+      'careerforge collect [--collector git|session] [--path <dir>] [--backfill] [--limit <n>]',
+    example: 'careerforge collect --backfill',
+    run: (args, env) => {
+      const requested = flag(args, 'collector');
+      if (requested !== undefined && !isCollectorName(requested)) {
+        return usageError(
+          `Unknown collector: ${requested}. Available: ${COLLECTOR_NAMES.join(', ')}.`,
+        );
+      }
+      return collect(env, {
+        ...(requested === undefined ? {} : { collectors: [requested] }),
+        ...(flag(args, 'path') === undefined ? {} : { path: flag(args, 'path')! }),
         backfill: args.includes('--backfill'),
         ...(flag(args, 'limit') === undefined ? {} : { limit: numericFlag(args, 'limit', 1000) }),
-      }),
+      });
+    },
   },
   init: {
     summary: 'Create the local store',

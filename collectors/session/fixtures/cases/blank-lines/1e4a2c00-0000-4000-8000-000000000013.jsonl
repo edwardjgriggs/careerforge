@@ -1,0 +1,6 @@
+
+{"parentUuid":null,"isSidechain":false,"userType":"external","cwd":"/home/dev/acme-api","gitBranch":"main","version":"2.1.198","entrypoint":"cli","sessionId":"1e4a2c00-0000-4000-8000-000000000013","uuid":"r-0031","timestamp":"2026-07-12T10:00:00.000Z","type":"user","promptSource":"typed","message":{"role":"user","content":[{"type":"text","text":"Tighten the CSP headers on the marketing site."}]}}
+   
+
+{"parentUuid":null,"isSidechain":false,"userType":"external","cwd":"/home/dev/acme-api","gitBranch":"main","version":"2.1.198","entrypoint":"cli","sessionId":"1e4a2c00-0000-4000-8000-000000000013","uuid":"r-0032","timestamp":"2026-07-12T10:20:00.000Z","type":"assistant","requestId":"req_31","message":{"id":"msg_31","type":"message","role":"assistant","model":"claude-opus-5","content":[{"type":"text","text":"Report-only first."}],"stop_reason":"end_turn","usage":{"input_tokens":100,"output_tokens":50}}}
+

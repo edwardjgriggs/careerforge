@@ -234,6 +234,36 @@ If the format breaks badly or subagent invisibility proves fatal, the smallest r
 
 ---
 
+## 1.7 Addendum — measured during implementation (M5, 2026-07-30)
+
+Three findings from building the collector against the real corpus rather than a sample. Each contradicted or extended an assumption above.
+
+### Transcripts are deleted after 30 days
+
+The corpus boundary is **exactly 30.0 days** (oldest 2026-06-30, newest 2026-07-30), and `cleanupPeriodDays` is unset — the default. This was read above as "the analysis window." It is retention.
+
+Consequences, all material:
+
+- **"Reference the raw transcript" produces a dangling reference within a month.** Evidence must stand alone. The collector stores a SHA-256 of the bytes it parsed, so provenance survives the file.
+- **There is no second chance.** Anything not collected is lost permanently, not deferred. This is the argument that decided ADR-0017 against dropping programmatic sessions.
+- **Backfill has a deadline.** A user installing CareerForge inherits at most 30 days of session history, and every day of delay costs a day permanently. That strengthens the case for the Continuous Operator retention model, not just the backfill acquisition model.
+
+### 93% of sessions were driven by a program, not typed
+
+| `promptSource` | Sessions |
+|---|---|
+| `sdk` | 1,110 |
+| typed (incl. `queued`/`system` combinations) | 87 |
+| none recorded | 1 |
+
+The 85–90 human-driven sessions are close to the ~94 substantive sessions estimated in §1.4 by duration — two independent measures pointing at the same population. See ADR-0017 for how these are collected without misattributing them.
+
+### Format drift is faster than the survey suggested
+
+The survey saw 12 versions and 13 record types. Building against the corpus found **14 versions**, and the **first run surfaced 2 more record types and 13 more fields** — including `isCompactSummary`, which was hiding a correctness bug rather than merely being unrecognised. This is why drift is now reported rather than silently tolerated (ADR-0016).
+
+---
+
 # Part 2 — Canonical Storage Model
 
 **Recommendation, stated plainly.**

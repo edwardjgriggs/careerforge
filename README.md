@@ -11,10 +11,14 @@ it, and the record already exists.
 
 ---
 
-> ### Status: pre-alpha — M4 of 13
+> ### Status: pre-alpha — M5 of 13
 >
-> **Collection works.** Point CareerForge at your Git repositories and it turns their history into
-> evidence you can search, browse by month, and export. Run it twice and nothing changes.
+> **Collection works, from two sources.** CareerForge turns your Git history _and_ your AI coding
+> sessions into evidence you can search, browse by month, and export. Run it twice and nothing
+> changes.
+>
+> Git records what changed. A session records what problem you were solving, what you tried, and
+> why — the part you forget first, and the part a STAR story needs.
 >
 > **There is no AI yet, and no career assets** — no resume bullets, no STAR stories, no Evidence
 > Explorer. Those are M9 through M11.

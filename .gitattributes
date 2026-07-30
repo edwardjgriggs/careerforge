@@ -1,4 +1,10 @@
 * text=auto eol=lf
+
+# Session fixtures are byte-exact inputs, and one of them exists specifically
+# to prove CRLF transcripts parse. Their expected output includes a hash of
+# the file bytes, so any line-ending conversion on checkout would break them
+# on exactly one platform.
+collectors/session/fixtures/** -text
 *.png binary
 *.jpg binary
 *.ico binary

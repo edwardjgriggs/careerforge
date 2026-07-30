@@ -1,0 +1,4 @@
+{"type":"mode","sessionId":"1e4a2c00-0000-4000-8000-000000000015","mode":"default"}
+{"type":"permission-mode","sessionId":"1e4a2c00-0000-4000-8000-000000000015","permissionMode":"acceptEdits"}
+{"type":"bridge-session","sessionId":"1e4a2c00-0000-4000-8000-000000000015","bridgeSessionId":"b-1","lastSequenceNum":0}
+{"type":"queue-operation","sessionId":"1e4a2c00-0000-4000-8000-000000000015","timestamp":"2026-07-13T06:00:00.000Z","operation":"drain","content":""}

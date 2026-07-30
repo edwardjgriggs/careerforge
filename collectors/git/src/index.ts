@@ -3,6 +3,7 @@ import { existsSync, readdirSync, statSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 
 import { toInstant, type AttributeMap, type EvidenceDraft } from '@careerforge/domain';
+import { isoWeek } from '@careerforge/collect';
 import type {
   CollectorEvent,
   CollectorManifest,
@@ -348,21 +349,6 @@ function draftFor(
     collectorVersion: VERSION,
     sourceFormatVersion: null,
   };
-}
-
-/** ISO-8601 week, as `YYYY-Www`. */
-function isoWeek(instant: string): string {
-  const date = new Date(instant);
-  const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  // ISO weeks run Monday to Sunday and belong to the year containing their
-  // Thursday.
-  const day = (target.getUTCDay() + 6) % 7;
-  target.setUTCDate(target.getUTCDate() - day + 3);
-  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
-  const firstDay = (firstThursday.getUTCDay() + 6) % 7;
-  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDay + 3);
-  const week = 1 + Math.round((target.getTime() - firstThursday.getTime()) / (7 * 86_400_000));
-  return `${target.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 
 export const gitCollector = new GitCollector();

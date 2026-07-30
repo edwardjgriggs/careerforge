@@ -1,0 +1,53 @@
+{
+  "drafts": [
+    {
+      "collectorId": "session",
+      "sourceUri": "session://1e4a2c00-0000-4000-8000-000000000018",
+      "kind": "session.fragment",
+      "evidenceClass": "imported",
+      "sensitivity": "restricted",
+      "occurredAt": "2026-07-16T09:00:00.000Z",
+      "occurredEnd": "2026-07-16T09:30:00.000Z",
+      "context": {
+        "projectKey": "acme-api",
+        "workspace": "/home/dev/acme-api",
+        "stream": "main"
+      },
+      "title": "Trace the duplicate webhook deliveries.",
+      "summary": null,
+      "excerpt": "Trace the duplicate webhook deliveries.",
+      "payloadRef": null,
+      "attributes": {
+        "sessionId": "1e4a2c00-0000-4000-8000-000000000018",
+        "transcriptSha256": "55542ede7afc79917d8cb8c620086064b97cb79c41e22cb35318c541dd0a355a",
+        "transcriptBytes": 911,
+        "recordCount": 2,
+        "userPrompts": 1,
+        "humanPrompts": 1,
+        "programmaticPrompts": 0,
+        "promptAuthorship": "human",
+        "assistantMessages": 1,
+        "toolCalls": 0,
+        "tools": [],
+        "workspacePaths": [],
+        "pathsOutsideWorkspace": 0,
+        "fileExtensions": [],
+        "gitOperations": [],
+        "gitCommandCount": 0,
+        "skills": [],
+        "plugins": [],
+        "mcpServers": [],
+        "models": ["claude-opus-5"],
+        "branches": ["main"],
+        "entrypoints": ["cli"],
+        "promptSources": ["typed"],
+        "durationMinutes": 30
+      },
+      "groupingHint": "acme-api:main:2026-W29",
+      "collectorVersion": "1.0.0",
+      "sourceFormatVersion": "2.1.198"
+    }
+  ],
+  "skipped": [],
+  "drift": ["session id in records differs from the file name"]
+}

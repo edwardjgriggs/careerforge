@@ -29,4 +29,6 @@ export {
 
 export { runCollection, type CollectionOptions } from './host.js';
 
+export { isoWeek } from './buckets.js';
+
 export { describeConformance, type ConformanceSubject, type TestHooks } from './conformance.js';

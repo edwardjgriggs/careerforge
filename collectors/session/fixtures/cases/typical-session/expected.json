@@ -1,0 +1,53 @@
+{
+  "drafts": [
+    {
+      "collectorId": "session",
+      "sourceUri": "session://1e4a2c00-0000-4000-8000-000000000001",
+      "kind": "session.fragment",
+      "evidenceClass": "imported",
+      "sensitivity": "restricted",
+      "occurredAt": "2026-07-01T09:00:00.000Z",
+      "occurredEnd": "2026-07-01T09:41:00.000Z",
+      "context": {
+        "projectKey": "acme-api",
+        "workspace": "/home/dev/acme-api",
+        "stream": "feature/invoice-export"
+      },
+      "title": "The invoice export drops line items when an order has more than fifty of them.",
+      "summary": null,
+      "excerpt": "The invoice export drops line items when an order has more than fifty of them.\nFind out why and fix it. There is a customer waiting on the September run.",
+      "payloadRef": null,
+      "attributes": {
+        "sessionId": "1e4a2c00-0000-4000-8000-000000000001",
+        "transcriptSha256": "904ca71f9a9597b4b2d7df29ca9707cf268092b0a5e3045ac7206a971f09eb5a",
+        "transcriptBytes": 3756,
+        "recordCount": 6,
+        "userPrompts": 1,
+        "humanPrompts": 1,
+        "programmaticPrompts": 0,
+        "promptAuthorship": "human",
+        "assistantMessages": 3,
+        "toolCalls": 5,
+        "tools": ["Bash", "Edit", "Read", "Write"],
+        "workspacePaths": ["src/export/invoices.ts", "tests/export/invoices.test.ts"],
+        "pathsOutsideWorkspace": 0,
+        "fileExtensions": ["ts"],
+        "gitOperations": ["add", "commit", "push"],
+        "gitCommandCount": 3,
+        "skills": ["systematic-debugging"],
+        "plugins": ["superpowers"],
+        "mcpServers": [],
+        "models": ["claude-opus-5"],
+        "branches": ["feature/invoice-export", "main"],
+        "entrypoints": ["cli"],
+        "promptSources": ["typed"],
+        "durationMinutes": 41
+      },
+      "groupingHint": "acme-api:feature/invoice-export:2026-W27",
+      "collectorVersion": "1.0.0",
+      "sourceFormatVersion": "2.1.220"
+    }
+  ],
+  "skipped": [],
+  "drift": []
+}

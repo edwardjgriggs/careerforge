@@ -54,6 +54,7 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
   let unchanged = 0;
   const skipped: Record<string, number> = {};
   const unknownRecordTypes: Record<string, number> = {};
+  const drift: Record<string, number> = {};
 
   const skip = (reason: string): void => {
     skipped[reason] = (skipped[reason] ?? 0) + 1;
@@ -62,6 +63,14 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
   for await (const event of options.collector.collect(options.scope, startingCursor)) {
     if (event.kind === 'cursor') {
       latestCursor = event.cursor;
+      continue;
+    }
+
+    // Not counted in `seen`: drift is an observation about the format, not
+    // about an artifact, and the artifact it was noticed on is already
+    // counted. See ADR-0016.
+    if (event.kind === 'drift') {
+      drift[event.signal] = (drift[event.signal] ?? 0) + 1;
       continue;
     }
 
@@ -118,6 +127,7 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
     unchanged,
     skipped,
     unknownRecordTypes,
+    drift,
     cursor: latestCursor,
   };
 }

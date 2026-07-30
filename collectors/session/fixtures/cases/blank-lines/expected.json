@@ -1,0 +1,53 @@
+{
+  "drafts": [
+    {
+      "collectorId": "session",
+      "sourceUri": "session://1e4a2c00-0000-4000-8000-000000000013",
+      "kind": "session.fragment",
+      "evidenceClass": "imported",
+      "sensitivity": "restricted",
+      "occurredAt": "2026-07-12T10:00:00.000Z",
+      "occurredEnd": "2026-07-12T10:20:00.000Z",
+      "context": {
+        "projectKey": "acme-api",
+        "workspace": "/home/dev/acme-api",
+        "stream": "main"
+      },
+      "title": "Tighten the CSP headers on the marketing site.",
+      "summary": null,
+      "excerpt": "Tighten the CSP headers on the marketing site.",
+      "payloadRef": null,
+      "attributes": {
+        "sessionId": "1e4a2c00-0000-4000-8000-000000000013",
+        "transcriptSha256": "e73cf6ab2cdae6b543f284e47fb9469f8048202c1fe1453274ce099a4a906d2a",
+        "transcriptBytes": 915,
+        "recordCount": 2,
+        "userPrompts": 1,
+        "humanPrompts": 1,
+        "programmaticPrompts": 0,
+        "promptAuthorship": "human",
+        "assistantMessages": 1,
+        "toolCalls": 0,
+        "tools": [],
+        "workspacePaths": [],
+        "pathsOutsideWorkspace": 0,
+        "fileExtensions": [],
+        "gitOperations": [],
+        "gitCommandCount": 0,
+        "skills": [],
+        "plugins": [],
+        "mcpServers": [],
+        "models": ["claude-opus-5"],
+        "branches": ["main"],
+        "entrypoints": ["cli"],
+        "promptSources": ["typed"],
+        "durationMinutes": 20
+      },
+      "groupingHint": "acme-api:main:2026-W28",
+      "collectorVersion": "1.0.0",
+      "sourceFormatVersion": "2.1.198"
+    }
+  ],
+  "skipped": [],
+  "drift": []
+}

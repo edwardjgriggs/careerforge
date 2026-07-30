@@ -13,6 +13,7 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@careerforge/collector-git": ["./collectors/git/src/index.ts"],
+      "@careerforge/collector-session": ["./collectors/session/src/index.ts"],
       "@careerforge/*": ["./packages/*/src/index.ts"]
     }
   },

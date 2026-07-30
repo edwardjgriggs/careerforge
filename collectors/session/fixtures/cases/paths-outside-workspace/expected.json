@@ -1,0 +1,53 @@
+{
+  "drafts": [
+    {
+      "collectorId": "session",
+      "sourceUri": "session://1e4a2c00-0000-4000-8000-000000000017",
+      "kind": "session.fragment",
+      "evidenceClass": "imported",
+      "sensitivity": "restricted",
+      "occurredAt": "2026-07-15T12:00:00.000Z",
+      "occurredEnd": "2026-07-15T12:05:00.000Z",
+      "context": {
+        "projectKey": "acme-api",
+        "workspace": "/home/dev/acme-api",
+        "stream": "main"
+      },
+      "title": "Reconcile the config between this service and the shared platform repo.",
+      "summary": null,
+      "excerpt": "Reconcile the config between this service and the shared platform repo.",
+      "payloadRef": null,
+      "attributes": {
+        "sessionId": "1e4a2c00-0000-4000-8000-000000000017",
+        "transcriptSha256": "eb34e7ad067705bdd8fb5e8010d086539542062f536aa49047b79c44ee359036",
+        "transcriptBytes": 1421,
+        "recordCount": 2,
+        "userPrompts": 1,
+        "humanPrompts": 1,
+        "programmaticPrompts": 0,
+        "promptAuthorship": "human",
+        "assistantMessages": 1,
+        "toolCalls": 4,
+        "tools": ["Glob", "Read"],
+        "workspacePaths": ["config/app.yaml"],
+        "pathsOutsideWorkspace": 2,
+        "fileExtensions": ["yaml"],
+        "gitOperations": [],
+        "gitCommandCount": 0,
+        "skills": [],
+        "plugins": [],
+        "mcpServers": [],
+        "models": ["claude-opus-5"],
+        "branches": ["main"],
+        "entrypoints": ["cli"],
+        "promptSources": ["typed"],
+        "durationMinutes": 5
+      },
+      "groupingHint": "acme-api:main:2026-W29",
+      "collectorVersion": "1.0.0",
+      "sourceFormatVersion": "2.1.198"
+    }
+  ],
+  "skipped": [],
+  "drift": []
+}

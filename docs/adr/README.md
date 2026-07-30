@@ -31,3 +31,9 @@ An accepted ADR is never edited except to change status or fix errors. Disagreem
 | [0009](0009-capability-grants-and-egress-separation.md) | Capability grants, with egress separate from network | Accepted |
 | [0010](0010-tolerant-parsing-contract.md) | Tolerant parsing is a platform contract | Accepted |
 | [0011](0011-forward-compatible-identity.md) | Every record carries subject and asserter identity | Accepted |
+| [0012](0012-platform-primitives-are-injected.md) | Platform primitives are injected into the domain | Accepted |
+| [0013](0013-append-only-is-universal-and-derived-by-join.md) | Append-only is universal; suppression is derived by join | Accepted |
+| [0014](0014-sqlite-driver-and-node-floor.md) | better-sqlite3, with a Node 22 floor | Accepted |
+| [0015](0015-identity-and-content-are-separate-tables.md) | Identity and content live in separate tables | Accepted |
+| [0016](0016-format-drift-is-reported-not-just-tolerated.md) | Format drift is reported, not just tolerated | Accepted |
+| [0017](0017-source-authored-is-not-human-authored.md) | Source-authored is not human-authored | Accepted |

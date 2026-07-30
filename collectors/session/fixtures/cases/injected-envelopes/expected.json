@@ -1,0 +1,53 @@
+{
+  "drafts": [
+    {
+      "collectorId": "session",
+      "sourceUri": "session://1e4a2c00-0000-4000-8000-000000000005",
+      "kind": "session.fragment",
+      "evidenceClass": "imported",
+      "sensitivity": "restricted",
+      "occurredAt": "2026-07-05T11:00:00.000Z",
+      "occurredEnd": "2026-07-05T11:31:00.000Z",
+      "context": {
+        "projectKey": "acme-api",
+        "workspace": "/home/dev/acme-api",
+        "stream": "main"
+      },
+      "title": "Split the reporting module into read and write paths.",
+      "summary": null,
+      "excerpt": "Split the reporting module into read and write paths.",
+      "payloadRef": null,
+      "attributes": {
+        "sessionId": "1e4a2c00-0000-4000-8000-000000000005",
+        "transcriptSha256": "d55ed86175a9658bb3b5b48412764654edf1c4e883fc25edf75dcbbe6a3fd062",
+        "transcriptBytes": 1423,
+        "recordCount": 3,
+        "userPrompts": 2,
+        "humanPrompts": 2,
+        "programmaticPrompts": 0,
+        "promptAuthorship": "human",
+        "assistantMessages": 1,
+        "toolCalls": 0,
+        "tools": [],
+        "workspacePaths": [],
+        "pathsOutsideWorkspace": 0,
+        "fileExtensions": [],
+        "gitOperations": [],
+        "gitCommandCount": 0,
+        "skills": [],
+        "plugins": [],
+        "mcpServers": [],
+        "models": ["claude-opus-5"],
+        "branches": ["main"],
+        "entrypoints": ["cli"],
+        "promptSources": ["queued", "typed"],
+        "durationMinutes": 31
+      },
+      "groupingHint": "acme-api:main:2026-W27",
+      "collectorVersion": "1.0.0",
+      "sourceFormatVersion": "2.1.198"
+    }
+  ],
+  "skipped": [],
+  "drift": []
+}

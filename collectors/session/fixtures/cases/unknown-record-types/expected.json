@@ -1,0 +1,57 @@
+{
+  "drafts": [
+    {
+      "collectorId": "session",
+      "sourceUri": "session://1e4a2c00-0000-4000-8000-000000000006",
+      "kind": "session.fragment",
+      "evidenceClass": "imported",
+      "sensitivity": "restricted",
+      "occurredAt": "2026-07-06T09:00:00.000Z",
+      "occurredEnd": "2026-07-06T09:20:00.000Z",
+      "context": {
+        "projectKey": "acme-api",
+        "workspace": "/home/dev/acme-api",
+        "stream": "main"
+      },
+      "title": "Profile the checkout endpoint under load.",
+      "summary": null,
+      "excerpt": "Profile the checkout endpoint under load.",
+      "payloadRef": null,
+      "attributes": {
+        "sessionId": "1e4a2c00-0000-4000-8000-000000000006",
+        "transcriptSha256": "cc31c7fe0d698341eaf8c2342c35c1bfa58a2f41fd43adf96438c4676bc3f2c1",
+        "transcriptBytes": 1435,
+        "recordCount": 6,
+        "userPrompts": 1,
+        "humanPrompts": 1,
+        "programmaticPrompts": 0,
+        "promptAuthorship": "human",
+        "assistantMessages": 1,
+        "toolCalls": 0,
+        "tools": [],
+        "workspacePaths": [],
+        "pathsOutsideWorkspace": 0,
+        "fileExtensions": [],
+        "gitOperations": [],
+        "gitCommandCount": 0,
+        "skills": [],
+        "plugins": [],
+        "mcpServers": [],
+        "models": ["claude-opus-5"],
+        "branches": ["main"],
+        "entrypoints": ["cli"],
+        "promptSources": ["typed"],
+        "durationMinutes": 20
+      },
+      "groupingHint": "acme-api:main:2026-W28",
+      "collectorVersion": "1.0.0",
+      "sourceFormatVersion": "2.1.198"
+    }
+  ],
+  "skipped": [],
+  "drift": [
+    "unrecognised record type: agent-handoff",
+    "unrecognised record type: sandbox-event",
+    "unrecognised record type: telemetry-sample"
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "drafts": [
+    {
+      "collectorId": "session",
+      "sourceUri": "session://1e4a2c00-0000-4000-8000-000000000008",
+      "kind": "session.fragment",
+      "evidenceClass": "imported",
+      "sensitivity": "restricted",
+      "occurredAt": "2026-07-08T15:00:00.000Z",
+      "occurredEnd": "2026-07-08T15:01:00.000Z",
+      "context": {
+        "projectKey": "acme-api",
+        "workspace": "/home/dev/acme-api",
+        "stream": "main"
+      },
+      "title": "Chart the error rate for the last quarter.",
+      "summary": null,
+      "excerpt": "Chart the error rate for the last quarter.",
+      "payloadRef": null,
+      "attributes": {
+        "sessionId": "1e4a2c00-0000-4000-8000-000000000008",
+        "transcriptSha256": "0f5dd65223064a9cbea0ca9b7bfbb0a81d731453b6110c12ee95abb47df18916",
+        "transcriptBytes": 1095,
+        "recordCount": 2,
+        "userPrompts": 1,
+        "humanPrompts": 1,
+        "programmaticPrompts": 0,
+        "promptAuthorship": "human",
+        "assistantMessages": 1,
+        "toolCalls": 1,
+        "tools": ["Read"],
+        "workspacePaths": ["data/errors.csv"],
+        "pathsOutsideWorkspace": 0,
+        "fileExtensions": ["csv"],
+        "gitOperations": [],
+        "gitCommandCount": 0,
+        "skills": [],
+        "plugins": [],
+        "mcpServers": [],
+        "models": ["claude-opus-5"],
+        "branches": ["main"],
+        "entrypoints": ["cli"],
+        "promptSources": ["typed"],
+        "durationMinutes": 1
+      },
+      "groupingHint": "acme-api:main:2026-W28",
+      "collectorVersion": "1.0.0",
+      "sourceFormatVersion": "2.1.198"
+    }
+  ],
+  "skipped": [],
+  "drift": ["unrecognised content block: code_execution_result"]
+}
