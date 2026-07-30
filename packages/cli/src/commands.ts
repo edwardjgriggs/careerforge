@@ -1,18 +1,25 @@
 import { existsSync } from 'node:fs';
 
 import {
+  explainRefusal,
+  isSensitivity,
   toInstant,
   DEFAULT_GROUPING_CONFIG,
+  SENSITIVITY_LEVELS,
   type ExplanationNode,
   type GroupingConfig,
   type Instant,
   type ProvenanceClass,
+  type Refusal,
+  type Sensitivity,
 } from '@careerforge/domain';
+import { evaluate, preview, type PayloadItem, type Provider } from '@careerforge/policy';
 import { formatReport, runCollection, type SourceRef } from '@careerforge/collect';
 import { GitCollector } from '@careerforge/collector-git';
 import { SessionCollector, defaultTranscriptRoot } from '@careerforge/collector-session';
 import {
   closeDatabase,
+  ConsentStore,
   CursorStore,
   EvidenceStore,
   InterviewEngine,
@@ -21,6 +28,7 @@ import {
   exportStore,
   nodePlatform,
   openDatabase,
+  sha256,
   rebuildStore,
   type Db,
 } from '@careerforge/store';
@@ -588,6 +596,242 @@ export function interview(env: NodeJS.ProcessEnv, options: InterviewOptions): Co
       'Answers are stored as evidence you confirmed, and are reused by every future asset.',
       '',
     );
+    return ok(lines.join('\n'));
+  });
+}
+
+// ── Consent and egress preview ────────────────────────────────────────────
+
+/**
+ * Providers this build knows about.
+ *
+ * `local` means the model runs on this machine, so nothing leaves and no
+ * grant is needed — which is what makes `restricted` workable rather than
+ * merely restrictive. None of these can be called yet; the choke point ships
+ * before any provider so there is no window in which egress is unenforced.
+ */
+const PROVIDERS: Readonly<Record<string, Provider>> = {
+  openai: { id: 'openai', locality: 'remote' },
+  anthropic: { id: 'anthropic', locality: 'remote' },
+  ollama: { id: 'ollama', locality: 'local' },
+};
+
+function resolveProvider(id: string): Provider {
+  // An unknown provider is treated as remote. Guessing "local" for something
+  // we cannot identify would fail open, and this is the one place in the
+  // codebase where failing open is unacceptable.
+  return PROVIDERS[id] ?? { id, locality: 'remote' };
+}
+
+function renderRefusals(refusals: readonly Refusal[]): string[] {
+  const lines: string[] = [];
+  for (const refusal of refusals) {
+    const { why, next } = explainRefusal(refusal);
+    lines.push(`  BLOCKED by ${refusal.rule}`, `    ${why}`, `    -> ${next}`, '');
+  }
+  return lines;
+}
+
+export interface ConsentOptions {
+  readonly action: 'list' | 'grant' | 'revoke';
+  readonly providerId?: string;
+  readonly projectKey?: string;
+  readonly level?: string;
+  readonly reason?: string;
+}
+
+export function consent(env: NodeJS.ProcessEnv, options: ConsentOptions): CommandResult {
+  const paths = resolvePaths(env);
+  if (!existsSync(paths.database)) {
+    return failure('No store yet.', 'Run `careerforge init` first.');
+  }
+
+  return withStore(paths, ({ db }) => {
+    const store = new ConsentStore(db, nodePlatform);
+
+    if (options.action === 'list') {
+      const grants = store.list();
+      if (grants.length === 0) {
+        return ok(
+          [
+            'No provider may receive anything.',
+            '',
+            'That is the default, and nothing changes it globally — consent is granted per',
+            'project so client work can stay on this machine while personal work does not.',
+            '',
+            '  careerforge consent grant --provider openai --project my-repo --level confidential',
+            '',
+          ].join('\n'),
+        );
+      }
+
+      const lines = ['What each provider may receive:', ''];
+      for (const grant of grants) {
+        lines.push(
+          `  ${grant.revoked ? 'REVOKED' : 'allowed'}  ${grant.providerId.padEnd(12)} ` +
+            `${(grant.projectKey ?? '(every project)').padEnd(24)} up to ${grant.maxSensitivity}`,
+        );
+      }
+      lines.push('', 'Restricted work never leaves unless a grant says so for that project.', '');
+      return ok(lines.join('\n'));
+    }
+
+    if (options.providerId === undefined) {
+      return failure('Which provider?', 'Pass --provider <id>.');
+    }
+    const projectKey = options.projectKey ?? null;
+
+    if (options.action === 'revoke') {
+      store.revoke(projectKey, options.providerId, options.reason);
+      return ok(
+        [
+          `${options.providerId} may no longer receive ${projectKey ?? 'anything'}.`,
+          '',
+          'The grant is not deleted — it is superseded, so what you allowed and when',
+          'stays answerable.',
+          '',
+        ].join('\n'),
+      );
+    }
+
+    const level = options.level ?? 'confidential';
+    if (!isSensitivity(level)) {
+      return failure(`Unknown level: ${level}.`, `Use one of ${SENSITIVITY_LEVELS.join(', ')}.`);
+    }
+
+    store.grant({
+      projectKey,
+      providerId: options.providerId,
+      maxSensitivity: level,
+      ...(options.reason === undefined ? {} : { reason: options.reason }),
+    });
+
+    return ok(
+      [
+        `${options.providerId} may now receive ${projectKey ?? 'work from any project'} up to ${level}.`,
+        '',
+        level === 'restricted'
+          ? 'That includes session transcripts, which routinely contain pasted credentials\nand files never committed. Use `careerforge preview` before enrichment lands.'
+          : 'Anything more sensitive than that is still refused.',
+        '',
+      ].join('\n'),
+    );
+  });
+}
+
+export interface PreviewOptions {
+  readonly workUnitId: string;
+  readonly providerId: string;
+  readonly full: boolean;
+}
+
+/**
+ * Show exactly what would be transmitted.
+ *
+ * Mandatory rather than advisory (ADR-0009). Pattern redaction cannot catch a
+ * client's name in a sentence or a frank opinion about a colleague; a person
+ * reading the actual bytes is the only real mitigation for that class. So this
+ * works even when the request would be refused — seeing what *would* leave is
+ * how somebody decides whether to allow it.
+ */
+export function previewEgress(env: NodeJS.ProcessEnv, options: PreviewOptions): CommandResult {
+  const paths = resolvePaths(env);
+  if (!existsSync(paths.database)) {
+    return failure('No store yet.', 'Run `careerforge init` first.');
+  }
+
+  return withStore(paths, ({ db }) => {
+    const units = new WorkUnitStore(db, nodePlatform);
+    const consentStore = new ConsentStore(db, nodePlatform);
+
+    const unit = units.currentUnits().find((candidate) => candidate.id === options.workUnitId);
+    if (unit === undefined) {
+      return failure(
+        `No work unit ${options.workUnitId}.`,
+        'Run `careerforge units` to list them.',
+      );
+    }
+
+    const items: PayloadItem[] = [];
+    for (const evidenceId of units.memberIds(unit.id)) {
+      const row = db
+        .prepare(
+          `SELECT e.sensitivity, e.project_key, e.kind,
+                  COALESCE(c.title,'') AS title, COALESCE(c.excerpt,'') AS excerpt
+           FROM evidence_current e LEFT JOIN evidence_content c ON c.evidence_id = e.id
+           WHERE e.id = ?`,
+        )
+        .get(evidenceId) as
+        | {
+            sensitivity: string;
+            project_key: string | null;
+            kind: string;
+            title: string;
+            excerpt: string;
+          }
+        | undefined;
+      if (row === undefined) continue;
+      items.push({
+        kind: 'evidence',
+        id: evidenceId,
+        sensitivity: row.sensitivity as Sensitivity,
+        projectKey: row.project_key,
+        text: row.excerpt === '' ? row.title : `${row.title}\n${row.excerpt}`,
+      });
+    }
+
+    const provider = resolveProvider(options.providerId);
+    const request = { provider, purpose: 'preview', items };
+    const shown = preview(request);
+    const decision = evaluate(request, {
+      consent: (projectKey, providerId) => consentStore.lookup(projectKey, providerId),
+      digest: sha256,
+    });
+    consentStore.recordDecision(decision);
+
+    const lines = [
+      `Work unit: ${unit.title}`,
+      `Provider:  ${provider.id} (${provider.locality})`,
+      `Contains:  ${items.length} record(s), most sensitive is ${decision.maxSensitivity}`,
+      '',
+    ];
+
+    if (decision.allowed) {
+      lines.push('ALLOWED — this is exactly what would be transmitted:', '');
+    } else {
+      lines.push(
+        'REFUSED — nothing would be transmitted.',
+        '',
+        ...renderRefusals(decision.refusals),
+        'Shown anyway, because seeing what would leave is how you decide whether to allow it:',
+        '',
+      );
+    }
+
+    const body = options.full ? shown.payload : shown.payload.slice(0, 2_000);
+    lines.push(
+      body === '' ? '  (nothing to send)' : body,
+      body.length < shown.payload.length
+        ? `\n  ... ${shown.payload.length - body.length} more characters (--full to see all)`
+        : '',
+      '',
+      shown.redaction.totalRedactions === 0
+        ? 'Redaction removed nothing. That is not a promise there is nothing sensitive here —'
+        : `Redaction removed ${shown.redaction.totalRedactions} item(s) using ${shown.redaction.profile}:`,
+    );
+
+    for (const finding of shown.redaction.findings) {
+      lines.push(`  ${finding.count} x ${finding.ruleId}`);
+    }
+
+    lines.push(
+      '',
+      'Patterns catch keys, tokens, and connection strings. They do not catch a client',
+      'name in a sentence or an opinion about a colleague. Read the text above before',
+      'you allow anything — that is what this command is for.',
+      '',
+    );
+
     return ok(lines.join('\n'));
   });
 }

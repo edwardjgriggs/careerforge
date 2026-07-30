@@ -48,6 +48,8 @@ export {
   type SupportOffer,
 } from './provenance-store.js';
 
+export { ConsentStore, type StoredGrant } from './consent-store.js';
+
 export {
   InterviewEngine,
   INTERVIEW_COLLECTOR_ID,

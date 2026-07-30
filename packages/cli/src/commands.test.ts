@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { toInstant } from '@careerforge/domain';
 import {
   closeDatabase,
+  ConsentStore,
   EvidenceStore,
   ProvenanceStore,
   QUESTION_TEMPLATES,
@@ -454,5 +455,153 @@ describe('explain and interview', () => {
     expect((await run(['interview', '--gap', gapId, '--answer', 'I led it.'], bare)).exitCode).toBe(
       0,
     );
+  });
+});
+
+describe('consent and preview', () => {
+  function seedUnit(sensitivity: 'confidential' | 'restricted', text = 'ordinary work'): string {
+    const { db } = openDatabase({ path: resolvePaths(env).database });
+    try {
+      const store = new EvidenceStore(db, nodePlatform);
+      const units = new WorkUnitStore(db, nodePlatform);
+      for (const n of [0, 1]) {
+        store.emit({
+          collectorId: 'session',
+          sourceUri: `session://policy-${sensitivity}-${n}`,
+          kind: 'session.fragment',
+          evidenceClass: 'imported',
+          sensitivity,
+          occurredAt: toInstant(`2026-05-04T${String(9 + n).padStart(2, '0')}:00:00.000Z`),
+          occurredEnd: toInstant(`2026-05-04T${String(10 + n).padStart(2, '0')}:00:00.000Z`),
+          context: { projectKey: 'acme', workspace: null, stream: 'feat/x' },
+          title: `Work ${n}`,
+          summary: null,
+          excerpt: text,
+          payloadRef: null,
+          attributes: {},
+          groupingHint: null,
+          collectorVersion: '1.0.0',
+          sourceFormatVersion: null,
+        });
+      }
+      units.group();
+      return units.currentUnits()[0]!.id;
+    } finally {
+      closeDatabase(db);
+    }
+  }
+
+  beforeEach(async () => {
+    await run(['init'], env);
+  });
+
+  it('permits nothing by default, and says there is no global switch', async () => {
+    const output = (await run(['consent', 'list'], env)).stdout;
+    expect(output).toContain('No provider may receive anything');
+    expect(output).toContain('per');
+  });
+
+  it('grants, lists, and revokes per project', async () => {
+    await run(['consent', 'grant', '--provider', 'openai', '--project', 'acme'], env);
+    expect((await run(['consent', 'list'], env)).stdout).toContain('openai');
+    expect((await run(['consent', 'list'], env)).stdout).toContain('acme');
+
+    await run(['consent', 'revoke', '--provider', 'openai', '--project', 'acme'], env);
+    expect((await run(['consent', 'list'], env)).stdout).toContain('REVOKED');
+  });
+
+  it('rejects an unknown sensitivity level rather than guessing', async () => {
+    const result = await run(
+      ['consent', 'grant', '--provider', 'openai', '--project', 'acme', '--level', 'sortof'],
+      env,
+    );
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('Unknown level');
+  });
+
+  it('rejects an unknown consent action', async () => {
+    const result = await run(['consent', 'destroy'], env);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Unknown consent action');
+  });
+
+  it('refuses egress with no grant, naming the rule and the exact command', async () => {
+    const unitId = seedUnit('confidential');
+    const output = (await run(['preview', '--unit', unitId, '--provider', 'openai'], env)).stdout;
+
+    expect(output).toContain('REFUSED');
+    expect(output).toContain('consent-required@1');
+    expect(output).toContain('careerforge consent grant --provider openai --project acme');
+  });
+
+  it('refuses restricted work even after a confidential grant', async () => {
+    const unitId = seedUnit('restricted');
+    await run(
+      ['consent', 'grant', '--provider', 'openai', '--project', 'acme', '--level', 'confidential'],
+      env,
+    );
+    const output = (await run(['preview', '--unit', unitId, '--provider', 'openai'], env)).stdout;
+    expect(output).toContain('restricted-default@1');
+    expect(output).toContain('--level restricted');
+  });
+
+  it('needs no grant for a provider that runs on this machine', async () => {
+    const unitId = seedUnit('restricted');
+    const output = (await run(['preview', '--unit', unitId, '--provider', 'ollama'], env)).stdout;
+    expect(output).toContain('ALLOWED');
+  });
+
+  it('treats an unknown provider as remote, never as local', async () => {
+    // Guessing "local" for something we cannot identify would fail open, and
+    // this is the one place where failing open is unacceptable.
+    const unitId = seedUnit('confidential');
+    const output = (await run(['preview', '--unit', unitId, '--provider', 'mystery'], env)).stdout;
+    expect(output).toContain('(remote)');
+    expect(output).toContain('REFUSED');
+  });
+
+  it('shows the payload even when refused, because that is how consent is decided', async () => {
+    const unitId = seedUnit('restricted', 'the actual words that would be sent');
+    const output = (await run(['preview', '--unit', unitId, '--provider', 'openai'], env)).stdout;
+    expect(output).toContain('REFUSED');
+    expect(output).toContain('the actual words that would be sent');
+  });
+
+  it('redacts credentials from what it shows', async () => {
+    const unitId = seedUnit('confidential', 'rotated key AKIAQY7EXAMPLE4NPTZW today');
+    const output = (await run(['preview', '--unit', unitId, '--provider', 'ollama'], env)).stdout;
+    expect(output).not.toContain('AKIAQY7EXAMPLE4NPTZW');
+    expect(output).toContain('aws-access-key-id');
+  });
+
+  it('states what redaction cannot catch rather than implying it caught everything', async () => {
+    // Overstating redaction converts an informed user into a trusting one.
+    const unitId = seedUnit('confidential');
+    const output = (await run(['preview', '--unit', unitId, '--provider', 'ollama'], env)).stdout;
+    expect(output).toContain('do not catch');
+  });
+
+  it('records a decision for every preview, permitted or not', async () => {
+    const unitId = seedUnit('confidential');
+    await run(['preview', '--unit', unitId, '--provider', 'openai'], env);
+    await run(['preview', '--unit', unitId, '--provider', 'ollama'], env);
+
+    const { db } = openDatabase({ path: resolvePaths(env).database });
+    try {
+      expect(new ConsentStore(db, nodePlatform).decisionCount()).toBe(2);
+    } finally {
+      closeDatabase(db);
+    }
+  });
+
+  it('needs both a unit and a provider', async () => {
+    expect((await run(['preview', '--provider', 'openai'], env)).stderr).toContain('--unit');
+    expect((await run(['preview', '--unit', 'x'], env)).stderr).toContain('--provider');
+  });
+
+  it('says plainly when the unit does not exist', async () => {
+    const result = await run(['preview', '--unit', 'nope', '--provider', 'openai'], env);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('No work unit');
   });
 });

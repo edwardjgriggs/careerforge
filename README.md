@@ -11,7 +11,7 @@ it, and the record already exists.
 
 ---
 
-> ### Status: pre-alpha — M7 of 13
+> ### Status: pre-alpha — M8 of 13
 >
 > **Collection and grouping work.** CareerForge turns your Git history _and_ your AI coding
 > sessions into evidence, then groups that evidence into units of work you would recognise as
@@ -26,11 +26,16 @@ it, and the record already exists.
 > claim nothing supports. `careerforge interview` asks the questions it will not guess at, with
 > no API key and no network.
 >
+> **Nothing can leave without your say-so.** The egress choke point ships before any provider
+> exists, so there is no release in which enrichment could reach the network unenforced.
+> `careerforge preview` shows the exact bytes that would be sent — and when it refuses, it names
+> the rule and the command that would permit it.
+>
 > **There is no AI yet** — no enrichment provider, no generated résumé bullets, no Evidence
 > Explorer UI. Those are M9 through M11.
 >
-> Working today: `collect` · `group` · `units` · `explain` · `interview` · `init` · `doctor` ·
-> `search` · `timeline` · `export` · `rebuild` · `reindex`
+> Working today: `collect` · `group` · `units` · `explain` · `interview` · `consent` · `preview` ·
+> `init` · `doctor` · `search` · `timeline` · `export` · `rebuild` · `reindex`
 >
 > This section will always tell you the truth about what works. See
 > [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for what lands when.

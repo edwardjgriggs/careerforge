@@ -18,7 +18,8 @@
   ],
   "dependencies": {
     "@careerforge/domain": "0.1.0",
-    "better-sqlite3": "^13.0.2"
+    "better-sqlite3": "^13.0.2",
+    "@careerforge/policy": "0.1.0"
   },
   "scripts": {
     "build": "tsc --build"

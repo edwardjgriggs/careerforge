@@ -1,9 +1,11 @@
 import {
   COLLECTOR_NAMES,
   collect,
+  consent,
   explain,
   group,
   interview,
+  previewEgress,
   exportCommand,
   init,
   isCollectorName,
@@ -167,6 +169,41 @@ const COMMANDS: Record<string, CommandSpec> = {
         decline: args.includes('--decline'),
         limit: numericFlag(args, 'limit', 20),
       }),
+  },
+  consent: {
+    summary: 'Control what may leave this machine, per project',
+    usage:
+      'careerforge consent list | grant --provider <id> [--project <key>] [--level <level>] | revoke --provider <id> [--project <key>]',
+    example: 'careerforge consent grant --provider openai --project my-repo --level confidential',
+    run: (args, env) => {
+      const action = args.find((arg) => !arg.startsWith('--')) ?? 'list';
+      if (action !== 'list' && action !== 'grant' && action !== 'revoke') {
+        return usageError(`Unknown consent action: ${action}. Use list, grant, or revoke.`);
+      }
+      return consent(env, {
+        action,
+        ...(flag(args, 'provider') === undefined ? {} : { providerId: flag(args, 'provider')! }),
+        ...(flag(args, 'project') === undefined ? {} : { projectKey: flag(args, 'project')! }),
+        ...(flag(args, 'level') === undefined ? {} : { level: flag(args, 'level')! }),
+        ...(flag(args, 'reason') === undefined ? {} : { reason: flag(args, 'reason')! }),
+      });
+    },
+  },
+  preview: {
+    summary: 'Show exactly what would be sent to a provider',
+    usage: 'careerforge preview --unit <id> --provider <id> [--full]',
+    example: 'careerforge preview --unit 01JEXAMPLE --provider openai',
+    run: (args, env) => {
+      const unit = flag(args, 'unit');
+      const provider = flag(args, 'provider');
+      if (unit === undefined) return usageError('preview needs --unit <id>.');
+      if (provider === undefined) return usageError('preview needs --provider <id>.');
+      return previewEgress(env, {
+        workUnitId: unit,
+        providerId: provider,
+        full: args.includes('--full'),
+      });
+    },
   },
   reindex: {
     summary: 'Rebuild the search index from the store',

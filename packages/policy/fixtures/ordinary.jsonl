@@ -1,0 +1,15 @@
+{"name":"plain-prose","text":"Rebuilt the invoice exporter so it stops dropping line items past the fiftieth row."}
+{"name":"code-with-identifiers","text":"const accessToken = await auth.exchange(code); // named for what it holds, not a value"}
+{"name":"sha-and-version-strings","text":"Bumped to 2.1.220 and cherry-picked a3f9c2e1b7d4568090abcdef1234567890abcdef."}
+{"name":"base64-that-is-not-a-secret","text":"The fixture encodes the PNG header as iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB for the test."}
+{"name":"uuid","text":"Session 52e66906-7cf3-4f52-ab2a-9b706485d92e ran for eleven minutes."}
+{"name":"relative-paths","text":"Edited src/export/invoices.ts and tests/export/invoices.test.ts."}
+{"name":"url-without-credentials","text":"Documented at https://docs.example.com/api/v2/invoices#pagination"}
+{"name":"sql-without-credentials","text":"SELECT id, total FROM invoices WHERE created_at > $1 ORDER BY id LIMIT 50;"}
+{"name":"config-keys-without-values","text":"The chart expects DATABASE_URL, REDIS_URL and LOG_LEVEL to be set by the operator."}
+{"name":"discussion-of-secrets","text":"We should rotate the signing key quarterly and store it in the vault, not the repo."}
+{"name":"hex-colour-and-numbers","text":"Set the accent to #A1B2C3 and the timeout to 30000 milliseconds."}
+{"name":"git-command","text":"git commit -m \"Fix invoice pagination\" && git push origin feature/invoice-export"}
+{"name":"error-with-stack-frame","text":"TypeError: Cannot read properties of null at parseInvoice (invoices.ts:214:19)"}
+{"name":"prose-with-at-sign","text":"Meet @channel at 3pm — the rollout is scheduled for 4pm sharp."}
+{"name":"markdown-table","text":"| field | type |\n|---|---|\n| id | string |\n| total | number |"}

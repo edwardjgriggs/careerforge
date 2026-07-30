@@ -422,14 +422,14 @@ The egress choke point — built **before** anything can make a remote call.
 - `careerforge preview --unit <id> --provider <id>`.
 
 ### Acceptance criteria
-- [ ] `restricted` evidence is refused to a non-local provider **by default**.
-- [ ] No global override exists — grants are per project.
-- [ ] Redaction removes every credential pattern in the fixture corpus.
-- [ ] `careerforge preview` shows the exact bytes that would be transmitted.
-- [ ] Every simulated egress writes a `PolicyDecision`.
-- [ ] A PR importing an HTTP client outside `policy` **fails CI**.
-- [ ] Revoking a grant immediately blocks subsequent requests.
-- [ ] Redaction is deterministic: same input + profile → same output.
+- [x] `restricted` evidence is refused to a non-local provider **by default**.
+- [x] No global override exists — grants are per project.
+- [x] Redaction removes every credential pattern in the fixture corpus (21 cases).
+- [x] `careerforge preview` shows the exact bytes that would be transmitted — including when refused, because that is how consent is decided.
+- [x] Every simulated egress writes a `PolicyDecision`.
+- [x] A PR importing an HTTP client outside `policy` **fails CI**.
+- [x] Revoking a grant immediately blocks subsequent requests.
+- [x] Redaction is deterministic: same input + profile → same output.
 
 ### Tests
 - Credential corpus: AWS/GCP/Azure keys, GitHub/Slack tokens, PEM blocks, JDBC/ODBC strings, `.env` files, bearer headers.
@@ -442,6 +442,22 @@ The egress choke point — built **before** anything can make a remote call.
 **This is the milestone that makes the privacy promise real.** It ships before any provider exists, so there is never a window in which egress is possible without enforcement.
 
 The false-positive corpus matters as much as the credential corpus: redaction that destroys legitimate content makes enrichment useless and trains users to disable it.
+
+### What implementation found
+
+**The false-positive corpus earned its place immediately.** It caught the secret-assignment rule redacting `const accessToken = await auth.exchange(code)` — ordinary code that *mentions* a token rather than containing one. A name is not a secret; the rule now requires the value to look like a literal.
+
+Two smaller ones: the idempotence self-check reported false residuals because `Authorization: [redacted]` still matches the authorization-header rule (the right property is that a second pass changes nothing, not that no rule fires), and a JSON `"client_secret": "..."` escaped because the pattern did not allow the closing quote before the colon.
+
+**Every refusal now names its rule and its remedy** (ADR-0022), applied to claim support as well as policy — the principle is not specific to egress. `Remedy` is a closed union, so adding a refusal without deciding what a user could do about it is a compile error.
+
+The engine is pure: consent arrives through an injected lookup and decisions are handed back to be persisted, so the whole consent matrix is tested with no database and no network anywhere near it.
+
+### Carried forward
+
+- Providers are declared but none can be called. The choke point ships first, so there is no release in which egress is possible without enforcement — M9 adds a provider behind it.
+- An unknown provider is treated as **remote**. Guessing "local" would fail open, and this is the one place where failing open is unacceptable.
+- The residual class — client names in prose, personnel discussion — is **not** solved and is stated plainly in `preview` output rather than implied away.
 
 Residual risk — client names in prose, personnel discussion — is **not** solved here and must be stated plainly in user-facing copy (ADR-0009). Overstating redaction is worse than having none.
 

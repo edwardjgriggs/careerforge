@@ -1,4 +1,5 @@
 import type { EvidenceClass } from './evidence.js';
+import type { Remedy } from './refusal.js';
 import type { AssetId, ClaimId, EnrichmentId, EvidenceId, WorkUnitId } from './ids.js';
 
 /**
@@ -95,6 +96,14 @@ export type SupportVerdict =
       readonly code: SupportFailureCode;
       /** Plain sentence explaining what is missing. Surfaced to the user. */
       readonly reason: string;
+      /**
+       * What would make this claim recordable.
+       *
+       * Required, not optional. A refusal that does not name the next step
+       * teaches the user nothing about their own evidence, and this is the
+       * refusal they will meet most often. See `refusal.ts`.
+       */
+      readonly remedy: Remedy;
     };
 
 const isEvidence = (node: SupportNode): node is Extract<SupportNode, { kind: 'evidence' }> =>
@@ -130,6 +139,11 @@ export function evaluateSupport(
       supported: false,
       code: 'no_support',
       reason: 'Nothing in the evidence supports this statement.',
+      remedy: {
+        kind: 'evidence',
+        needs: 'imported',
+        detail: 'Collect the work this describes, or group it into a work unit first.',
+      },
     };
   }
 
@@ -139,6 +153,11 @@ export function evaluateSupport(
       code: 'interpretation_only',
       reason:
         'Only an AI interpretation supports this statement. Interpretation can explain evidence but cannot stand in for it.',
+      remedy: {
+        kind: 'evidence',
+        needs: 'imported',
+        detail: 'Cite the artifacts the interpretation was reading, not the interpretation.',
+      },
     };
   }
 
@@ -155,6 +174,11 @@ export function evaluateSupport(
             supported: false,
             code: 'no_support',
             reason: 'No evidence or work unit records this action.',
+            remedy: {
+              kind: 'evidence',
+              needs: 'imported',
+              detail: 'Collect the commits or sessions where this happened.',
+            },
           };
 
     case 'scope':
@@ -167,6 +191,12 @@ export function evaluateSupport(
             code: 'scope_requires_corroborating_evidence',
             reason:
               'No evidence corroborates this scope. CareerForge will ask you to confirm it rather than estimate.',
+            remedy: {
+              kind: 'evidence',
+              needs: 'corroborating',
+              detail:
+                'Cite evidence carrying the figure itself, or confirm the number and it becomes evidence you stand behind.',
+            },
           };
 
     case 'role':
@@ -180,6 +210,11 @@ export function evaluateSupport(
             code: 'role_requires_confirmation',
             reason:
               'Leadership and responsibility cannot be inferred from activity. CareerForge will ask whether you led this work.',
+            remedy: {
+              kind: 'confirm',
+              needs: 'user_confirmed',
+              question: 'What was your role in this work? Did you lead it, or contribute to it?',
+            },
           };
 
     case 'metric':
@@ -195,6 +230,11 @@ export function evaluateSupport(
             code: 'metric_requires_derived_or_confirmed',
             reason:
               'Numbers must be computed from evidence or confirmed by you. CareerForge will ask rather than estimate.',
+            remedy: {
+              kind: 'confirm',
+              needs: 'user_confirmed',
+              question: 'Did this work produce a measurable result you can quote?',
+            },
           };
 
     case 'outcome':
@@ -206,6 +246,11 @@ export function evaluateSupport(
             supported: false,
             code: 'outcome_requires_evidence',
             reason: 'No evidence records this outcome.',
+            remedy: {
+              kind: 'evidence',
+              needs: 'imported',
+              detail: 'Collect what shows the result — a merged change, a closed issue, a release.',
+            },
           };
   }
 }

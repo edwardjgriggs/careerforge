@@ -6,18 +6,22 @@ import { describe, expect, it } from 'vitest';
 
 import {
   evaluateSupport,
+  isActionable,
   isExportable,
   isSupportingRelation,
   isWellFormed,
   maxSensitivity,
   suppressedIds,
   toInstant,
+  CLAIM_TYPES,
   type SupportNode,
 } from '@careerforge/domain';
 import type { EnrichmentId, EvidenceId, ProvenanceEdgeId } from '@careerforge/domain';
+import { evaluate, POLICY_RULES } from '@careerforge/policy';
 import {
   canonicalJson,
   closeDatabase,
+  ConsentStore,
   deterministicPlatform,
   EXPORT_FORMAT_VERSION,
   IN_MEMORY,
@@ -163,8 +167,92 @@ describe('I3 — every outbound call passes through the Policy Engine', () => {
     expect(maxSensitivity(['public', 'restricted'])).toBe('restricted');
   });
 
-  it.todo('M8: a simulated egress without a matching grant is refused');
-  it.todo('M8: every simulated egress writes a PolicyDecision');
+  it('refuses an egress without a matching grant', () => {
+    const decision = evaluate(
+      {
+        provider: { id: 'openai', locality: 'remote' },
+        purpose: 'enrich',
+        items: [
+          {
+            kind: 'evidence',
+            id: 'ev-1',
+            sensitivity: 'confidential',
+            projectKey: 'acme',
+            text: 'work',
+          },
+        ],
+      },
+      { consent: () => null },
+    );
+    expect(decision.allowed).toBe(false);
+    expect(decision.payload).toBe('');
+  });
+
+  it('writes a PolicyDecision for every evaluation, permitted or not', () => {
+    const { db } = openDatabase({ path: IN_MEMORY });
+    try {
+      const consent = new ConsentStore(db, deterministicPlatform());
+      for (let n = 0; n < 3; n++) {
+        consent.recordDecision(
+          evaluate(
+            {
+              provider: { id: 'openai', locality: 'remote' },
+              purpose: 'enrich',
+              items: [
+                {
+                  kind: 'evidence',
+                  id: `ev-${n}`,
+                  sensitivity: 'public',
+                  projectKey: null,
+                  text: 'x',
+                },
+              ],
+            },
+            { consent: () => null },
+          ),
+        );
+      }
+      // N calls, N rows. A trail with only the permitted calls would answer
+      // "what left?" and not "what was attempted?" (ADR-0009).
+      expect(consent.decisionCount()).toBe(3);
+    } finally {
+      closeDatabase(db);
+    }
+  });
+
+  it('every policy refusal names a rule and what would change it', () => {
+    // The principle applies wherever CareerForge says no: a refusal without a
+    // next step is an obstacle rather than a guide (ADR-0022).
+    const decision = evaluate(
+      {
+        provider: { id: 'openai', locality: 'remote' },
+        purpose: 'enrich',
+        items: [
+          {
+            kind: 'evidence',
+            id: 'ev-1',
+            sensitivity: 'restricted',
+            projectKey: 'acme',
+            text: 'work',
+          },
+        ],
+      },
+      { consent: () => null },
+    );
+    for (const refusal of decision.refusals) {
+      expect(POLICY_RULES).toContain(refusal.rule);
+      expect(isActionable(refusal.remedy)).toBe(true);
+    }
+  });
+
+  it('refuses every claim type with a remedy, not merely a reason', () => {
+    // The same rule for the refusal users meet most often.
+    for (const claimType of CLAIM_TYPES) {
+      const verdict = evaluateSupport(claimType, []);
+      if (verdict.supported) throw new Error(`${claimType} should be unsupported with no support`);
+      expect(isActionable(verdict.remedy), `${claimType} has no actionable remedy`).toBe(true);
+    }
+  });
 });
 
 describe('I4 — every claim resolves to at least one provenance edge', () => {

@@ -157,6 +157,15 @@ export {
   type ProvenanceLookup,
 } from './explanation.js';
 
+// ── Refusals: saying no in a way somebody can act on ──────────────────────
+export {
+  describeRemedy,
+  explainRefusal,
+  isActionable,
+  type Refusal,
+  type Remedy,
+} from './refusal.js';
+
 // ── Claims: the unit of accountability ────────────────────────────────────
 export {
   evaluateSupport,

@@ -41,3 +41,4 @@ An accepted ADR is never edited except to change status or fix errors. Disagreem
 | [0019](0019-grouping-quality-is-measured.md) | Grouping quality is measured against a labelled corpus | Accepted |
 | [0020](0020-explanation-separates-grounds-from-interpretation.md) | An explanation separates grounds from interpretation | Accepted |
 | [0021](0021-the-interview-is-not-a-collector.md) | The person is a source; the interview is not a collector | Accepted |
+| [0022](0022-every-refusal-names-its-remedy.md) | Every refusal names the rule and the remedy | Accepted |
