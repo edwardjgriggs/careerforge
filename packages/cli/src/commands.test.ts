@@ -20,7 +20,7 @@ import { resolvePaths } from './paths.js';
 let home: string;
 let env: NodeJS.ProcessEnv;
 
-beforeEach(() => {
+beforeEach(async () => {
   home = mkdtempSync(join(tmpdir(), 'cf-cli-'));
   env = { CAREERFORGE_HOME: home };
 });
@@ -63,170 +63,174 @@ function seed(count: number, titlePrefix = 'Commit'): void {
 }
 
 describe('help and discoverability', () => {
-  it('lists every command in usage', () => {
-    const usage = run(['--help'], env).stdout;
+  it('lists every command in usage', async () => {
+    const usage = (await run(['--help'], env)).stdout;
     for (const name of COMMAND_NAMES) {
       expect(usage, `${name} is missing from usage`).toContain(name);
     }
   });
 
-  it('gives every command its own help with an example', () => {
+  it('gives every command its own help with an example', async () => {
     for (const name of COMMAND_NAMES) {
-      const help = run([name, '--help'], env).stdout;
+      const help = (await run([name, '--help'], env)).stdout;
       expect(help, `${name} help`).toContain('Usage:');
       expect(help, `${name} example`).toContain('Example:');
     }
   });
 
-  it('never surfaces a raw stack trace', () => {
-    const result = run(['rebuild', '--from', join(home, 'nowhere')], env);
+  it('never surfaces a raw stack trace', async () => {
+    const result = await run(['rebuild', '--from', join(home, 'nowhere')], env);
     expect(result.exitCode).toBe(1);
     expect(result.stderr).not.toContain('    at ');
   });
 });
 
 describe('init', () => {
-  it('creates the store', () => {
-    const result = run(['init'], env);
+  it('creates the store', async () => {
+    const result = await run(['init'], env);
     expect(result.exitCode).toBe(0);
     expect(existsSync(resolvePaths(env).database)).toBe(true);
   });
 
-  it('is safe to run twice', () => {
-    run(['init'], env);
-    const second = run(['init'], env);
+  it('is safe to run twice', async () => {
+    await run(['init'], env);
+    const second = await run(['init'], env);
     expect(second.exitCode).toBe(0);
     expect(second.stdout).toContain('already present');
   });
 });
 
 describe('commands refuse to work on a store that does not exist', () => {
-  it.each(['export', 'search', 'timeline', 'reindex'])('%s explains what to do first', (name) => {
-    const result = run(name === 'search' ? [name, 'anything'] : [name], env);
-    expect(result.exitCode).toBe(1);
-    expect(result.stderr).toContain('careerforge init');
-  });
+  it.each(['export', 'search', 'timeline', 'reindex'])(
+    '%s explains what to do first',
+    async (name) => {
+      const result = await run(name === 'search' ? [name, 'anything'] : [name], env);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain('careerforge init');
+    },
+  );
 
-  it('creates nothing as a side effect', () => {
-    run(['timeline'], env);
+  it('creates nothing as a side effect', async () => {
+    await run(['timeline'], env);
     expect(existsSync(resolvePaths(env).database)).toBe(false);
   });
 });
 
 describe('timeline', () => {
-  beforeEach(() => {
-    run(['init'], env);
+  beforeEach(async () => {
+    await run(['init'], env);
     seed(6);
   });
 
-  it('groups by month', () => {
-    const output = run(['timeline'], env).stdout;
+  it('groups by month', async () => {
+    const output = (await run(['timeline'], env)).stdout;
     expect(output).toContain('2026-01');
     expect(output).toContain('record(s)');
   });
 
-  it('filters by a plain date', () => {
-    const output = run(['timeline', '--from', '2026-04-01'], env).stdout;
+  it('filters by a plain date', async () => {
+    const output = (await run(['timeline', '--from', '2026-04-01'], env)).stdout;
     expect(output).not.toContain('2026-01');
     expect(output).toContain('2026-04');
   });
 
-  it('accepts a closing bound that includes the whole day', () => {
-    const output = run(['timeline', '--from', '2026-03-15', '--to', '2026-03-15'], env).stdout;
+  it('accepts a closing bound that includes the whole day', async () => {
+    const output = (await run(['timeline', '--from', '2026-03-15', '--to', '2026-03-15'], env))
+      .stdout;
     expect(output).toContain('2026-03');
   });
 
-  it('explains a malformed date rather than failing obscurely', () => {
-    const result = run(['timeline', '--from', 'last tuesday'], env);
+  it('explains a malformed date rather than failing obscurely', async () => {
+    const result = await run(['timeline', '--from', 'last tuesday'], env);
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain('YYYY-MM-DD');
   });
 
-  it('says so plainly when a window is empty', () => {
-    expect(run(['timeline', '--from', '2030-01-01'], env).stdout).toContain('No evidence');
+  it('says so plainly when a window is empty', async () => {
+    expect((await run(['timeline', '--from', '2030-01-01'], env)).stdout).toContain('No evidence');
   });
 });
 
 describe('search', () => {
-  beforeEach(() => {
-    run(['init'], env);
+  beforeEach(async () => {
+    await run(['init'], env);
     seed(4, 'Findable');
   });
 
-  it('finds evidence with no API key and no network', () => {
-    expect(run(['search', 'Findable'], env).stdout).toContain('match(es)');
+  it('finds evidence with no API key and no network', async () => {
+    expect((await run(['search', 'Findable'], env)).stdout).toContain('match(es)');
   });
 
-  it('reports no matches without failing', () => {
-    const result = run(['search', 'nonexistentterm'], env);
+  it('reports no matches without failing', async () => {
+    const result = await run(['search', 'nonexistentterm'], env);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('No evidence matches');
   });
 
-  it('needs something to search for', () => {
-    const result = run(['search'], env);
+  it('needs something to search for', async () => {
+    const result = await run(['search'], env);
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain('needs something');
   });
 
-  it('accepts a multi-word query', () => {
-    expect(run(['search', 'Findable', '1'], env).exitCode).toBe(0);
+  it('accepts a multi-word query', async () => {
+    expect((await run(['search', 'Findable', '1'], env)).exitCode).toBe(0);
   });
 });
 
 describe('export and rebuild', () => {
-  beforeEach(() => {
-    run(['init'], env);
+  beforeEach(async () => {
+    await run(['init'], env);
     seed(10);
   });
 
-  it('exports to the default location', () => {
-    const result = run(['export'], env);
+  it('exports to the default location', async () => {
+    const result = await run(['export'], env);
     expect(result.exitCode).toBe(0);
     expect(existsSync(join(resolvePaths(env).exportDir, 'manifest.json'))).toBe(true);
   });
 
-  it('reports doing nothing when nothing changed', () => {
-    run(['export'], env);
-    expect(run(['export'], env).stdout).toContain('Nothing changed');
+  it('reports doing nothing when nothing changed', async () => {
+    await run(['export'], env);
+    expect((await run(['export'], env)).stdout).toContain('Nothing changed');
   });
 
-  it('honours an explicit destination', () => {
+  it('honours an explicit destination', async () => {
     const target = join(home, 'elsewhere');
-    run(['export', '--out', target], env);
+    await run(['export', '--out', target], env);
     expect(existsSync(join(target, 'manifest.json'))).toBe(true);
   });
 
-  it('refuses to rebuild over an existing store, and says why', () => {
-    run(['export'], env);
-    const result = run(['rebuild'], env);
+  it('refuses to rebuild over an existing store, and says why', async () => {
+    await run(['export'], env);
+    const result = await run(['rebuild'], env);
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain('already holds');
   });
 
-  it('recovers a lost database from the export alone', () => {
+  it('recovers a lost database from the export alone', async () => {
     // The scenario the whole design exists for: the machine is gone, and all
     // that survived is a directory of JSON on a sync provider.
-    run(['export'], env);
+    await run(['export'], env);
     const paths = resolvePaths(env);
     rmSync(paths.database, { force: true });
     rmSync(`${paths.database}-wal`, { force: true });
     rmSync(`${paths.database}-shm`, { force: true });
 
-    const rebuilt = run(['rebuild'], env);
+    const rebuilt = await run(['rebuild'], env);
     expect(rebuilt.exitCode).toBe(0);
     expect(rebuilt.stdout).toContain('Rebuilt');
 
-    const timelineOutput = run(['timeline'], env).stdout;
+    const timelineOutput = (await run(['timeline'], env)).stdout;
     expect(timelineOutput).toContain('10 record(s)');
   });
 });
 
 describe('reindex', () => {
-  it('rebuilds the search index', () => {
-    run(['init'], env);
+  it('rebuilds the search index', async () => {
+    await run(['init'], env);
     seed(3);
-    const result = run(['reindex'], env);
+    const result = await run(['reindex'], env);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('Reindexed 3');
   });

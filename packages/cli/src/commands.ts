@@ -1,8 +1,11 @@
 import { existsSync } from 'node:fs';
 
 import { toInstant, type Instant } from '@careerforge/domain';
+import { formatReport, runCollection } from '@careerforge/collect';
+import { GitCollector } from '@careerforge/collector-git';
 import {
   closeDatabase,
+  CursorStore,
   EvidenceStore,
   exportStore,
   nodePlatform,
@@ -186,6 +189,83 @@ export function timeline(
     return ok(`${lines.join('\n')}\n\n${records.length} record(s).\n`);
   });
 }
+
+export interface CollectOptions {
+  /** Directory to collect from. A repository, or a directory of them. */
+  readonly path: string;
+  /** Ignore the stored cursor and replay everything. */
+  readonly backfill: boolean;
+  readonly limit?: number;
+}
+
+/**
+ * Collect evidence from local repositories.
+ *
+ * Only the Git collector for now. A registry keyed by `--collector` arrives
+ * when there is a second one to choose between; inventing one now would mean
+ * designing it against a single implementation.
+ */
+export async function collect(
+  env: NodeJS.ProcessEnv,
+  options: CollectOptions,
+): Promise<CommandResult> {
+  const paths = resolvePaths(env);
+  const collector = new GitCollector();
+
+  const sources = await collector.discover(options.path);
+  if (sources.length === 0) {
+    return failure(
+      `No Git repositories found at ${options.path}.`,
+      'Point --path at a repository, or at a directory containing some.',
+    );
+  }
+
+  const { db } = openDatabase({ path: paths.database });
+  try {
+    const store = new EvidenceStore(db, nodePlatform);
+    const cursors = new CursorStore(db, nodePlatform);
+    const reports: string[] = [];
+    let totalNew = 0;
+
+    for (const source of sources) {
+      const report = await runCollection({
+        collector,
+        scope: source.scope,
+        store,
+        cursors,
+        backfill: options.backfill,
+        ...(options.limit === undefined ? {} : { limit: options.limit }),
+      });
+      totalNew += report.inserted;
+      reports.push(`${source.label}\n${indent(formatReport(report))}`);
+    }
+
+    const summary =
+      totalNew === 0
+        ? 'Nothing new. Everything found was already on record.'
+        : `${totalNew} new record(s) collected.`;
+
+    return ok(
+      [
+        `Collected from ${sources.length} repositor${sources.length === 1 ? 'y' : 'ies'}:`,
+        '',
+        ...reports,
+        '',
+        summary,
+        `Store now holds ${store.count()} current record(s). Try \`careerforge timeline\`.`,
+        '',
+      ].join('\n'),
+    );
+  } finally {
+    closeDatabase(db);
+  }
+}
+
+const indent = (text: string): string =>
+  text
+    .split('\n')
+    .map((line) => `  ${line}`)
+    .join('\n');
 
 export function reindex(env: NodeJS.ProcessEnv): CommandResult {
   const paths = resolvePaths(env);

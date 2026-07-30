@@ -2,6 +2,7 @@ import { mkdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import { migration0001 } from './0001-initial.js';
+import { migration0002 } from './0002-collector-cursors.js';
 import type { Db, Migration } from './types.js';
 
 export type { Db, Migration } from './types.js';
@@ -13,7 +14,7 @@ export type { Db, Migration } from './types.js';
  * be unique. A gap or a duplicate is a merge accident, and catching it here is
  * far better than discovering it on a user's machine mid-upgrade.
  */
-export const MIGRATIONS: readonly Migration[] = [migration0001];
+export const MIGRATIONS: readonly Migration[] = [migration0001, migration0002];
 
 for (const [index, migration] of MIGRATIONS.entries()) {
   if (migration.version !== index + 1) {

@@ -1,0 +1,134 @@
+[
+  {
+    "collectorId": "git",
+    "sourceUri": "git://0e51349a6d74199cb5c45c5409fadce8923ff1f2/commit/0cfd6a230d6c7c491d65515405305ec68094596b",
+    "kind": "git.commit",
+    "evidenceClass": "imported",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-02-20T16:45:00.000Z",
+    "occurredEnd": null,
+    "context": {
+      "projectKey": "fixture-repo",
+      "workspace": "<workspace>",
+      "stream": null
+    },
+    "title": "Améliorer la journalisation — 日本語 too",
+    "summary": null,
+    "excerpt": null,
+    "payloadRef": null,
+    "attributes": {
+      "repositoryId": "0e51349a6d74199cb5c45c5409fadce8923ff1f2",
+      "sha": "0cfd6a230d6c7c491d65515405305ec68094596b",
+      "authorName": "Fixture Author",
+      "authorEmail": "author@example.invalid",
+      "coauthors": [],
+      "filesChanged": 1,
+      "insertions": 1,
+      "deletions": 0,
+      "isMerge": false,
+      "committedAt": "2026-02-20T16:45:00.000Z"
+    },
+    "groupingHint": "fixture-repo:2026-W08",
+    "collectorVersion": "1.0.0",
+    "sourceFormatVersion": null
+  },
+  {
+    "collectorId": "git",
+    "sourceUri": "git://0e51349a6d74199cb5c45c5409fadce8923ff1f2/commit/c79cb2f2a288f7715e7c1b55cec574e594e6d036",
+    "kind": "git.commit",
+    "evidenceClass": "imported",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-02-02T11:05:00.000Z",
+    "occurredEnd": null,
+    "context": {
+      "projectKey": "fixture-repo",
+      "workspace": "<workspace>",
+      "stream": null
+    },
+    "title": "Remove dead helper",
+    "summary": null,
+    "excerpt": null,
+    "payloadRef": null,
+    "attributes": {
+      "repositoryId": "0e51349a6d74199cb5c45c5409fadce8923ff1f2",
+      "sha": "c79cb2f2a288f7715e7c1b55cec574e594e6d036",
+      "authorName": "Fixture Author",
+      "authorEmail": "author@example.invalid",
+      "coauthors": [],
+      "filesChanged": 2,
+      "insertions": 1,
+      "deletions": 5,
+      "isMerge": false,
+      "committedAt": "2026-02-02T11:05:00.000Z"
+    },
+    "groupingHint": "fixture-repo:2026-W06",
+    "collectorVersion": "1.0.0",
+    "sourceFormatVersion": null
+  },
+  {
+    "collectorId": "git",
+    "sourceUri": "git://0e51349a6d74199cb5c45c5409fadce8923ff1f2/commit/efef5413fb55d7b3ecf129d635637c3a62289a0c",
+    "kind": "git.commit",
+    "evidenceClass": "imported",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-01-16T14:30:00.000Z",
+    "occurredEnd": null,
+    "context": {
+      "projectKey": "fixture-repo",
+      "workspace": "<workspace>",
+      "stream": null
+    },
+    "title": "Implement parsing",
+    "summary": "Handles the three record shapes we see in practice.\n\nCo-authored-by: Ada Lovelace <ada@example.invalid>",
+    "excerpt": null,
+    "payloadRef": null,
+    "attributes": {
+      "repositoryId": "0e51349a6d74199cb5c45c5409fadce8923ff1f2",
+      "sha": "efef5413fb55d7b3ecf129d635637c3a62289a0c",
+      "authorName": "Fixture Author",
+      "authorEmail": "author@example.invalid",
+      "coauthors": ["Ada Lovelace <ada@example.invalid>"],
+      "filesChanged": 2,
+      "insertions": 5,
+      "deletions": 1,
+      "isMerge": false,
+      "committedAt": "2026-01-16T14:30:00.000Z"
+    },
+    "groupingHint": "fixture-repo:2026-W03",
+    "collectorVersion": "1.0.0",
+    "sourceFormatVersion": null
+  },
+  {
+    "collectorId": "git",
+    "sourceUri": "git://0e51349a6d74199cb5c45c5409fadce8923ff1f2/commit/0e51349a6d74199cb5c45c5409fadce8923ff1f2",
+    "kind": "git.commit",
+    "evidenceClass": "imported",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-01-15T09:00:00.000Z",
+    "occurredEnd": null,
+    "context": {
+      "projectKey": "fixture-repo",
+      "workspace": "<workspace>",
+      "stream": null
+    },
+    "title": "Add project skeleton",
+    "summary": null,
+    "excerpt": null,
+    "payloadRef": null,
+    "attributes": {
+      "repositoryId": "0e51349a6d74199cb5c45c5409fadce8923ff1f2",
+      "sha": "0e51349a6d74199cb5c45c5409fadce8923ff1f2",
+      "authorName": "Fixture Author",
+      "authorEmail": "author@example.invalid",
+      "coauthors": [],
+      "filesChanged": 2,
+      "insertions": 2,
+      "deletions": 0,
+      "isMerge": false,
+      "committedAt": "2026-01-15T09:00:00.000Z"
+    },
+    "groupingHint": "fixture-repo:2026-W03",
+    "collectorVersion": "1.0.0",
+    "sourceFormatVersion": null
+  }
+]

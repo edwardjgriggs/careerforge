@@ -11,15 +11,16 @@ it, and the record already exists.
 
 ---
 
-> ### Status: pre-alpha — M3 of 13
+> ### Status: pre-alpha — M4 of 13
 >
-> The persistence layer is real. Evidence can be stored, corrected, suppressed, searched, and
-> exported, and the database can be rebuilt from the export alone.
+> **Collection works.** Point CareerForge at your Git repositories and it turns their history into
+> evidence you can search, browse by month, and export. Run it twice and nothing changes.
 >
-> **Nothing collects anything yet.** There are no collectors, no AI, and no career assets — so
-> there is currently no way to get evidence in except programmatically. Collectors arrive in M4.
+> **There is no AI yet, and no career assets** — no resume bullets, no STAR stories, no Evidence
+> Explorer. Those are M9 through M11.
 >
-> Working today: `init` · `doctor` · `search` · `timeline` · `export` · `rebuild` · `reindex`
+> Working today: `collect` · `init` · `doctor` · `search` · `timeline` · `export` · `rebuild` ·
+> `reindex`
 >
 > This section will always tell you the truth about what works. See
 > [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for what lands when.

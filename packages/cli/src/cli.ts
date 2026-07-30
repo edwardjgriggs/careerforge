@@ -1,4 +1,5 @@
 import {
+  collect,
   exportCommand,
   init,
   rebuild,
@@ -16,7 +17,7 @@ interface CommandSpec {
   readonly summary: string;
   readonly usage: string;
   readonly example: string;
-  readonly run: (args: readonly string[], env: NodeJS.ProcessEnv) => CliResult;
+  readonly run: (args: readonly string[], env: NodeJS.ProcessEnv) => CliResult | Promise<CliResult>;
 }
 
 const ok = (stdout: string): CliResult => ({ stdout, stderr: '', exitCode: 0 });
@@ -44,6 +45,17 @@ function numericFlag(args: readonly string[], name: string, fallback: number): n
 }
 
 const COMMANDS: Record<string, CommandSpec> = {
+  collect: {
+    summary: 'Collect evidence from local Git repositories',
+    usage: 'careerforge collect [--path <dir>] [--backfill] [--limit <n>]',
+    example: 'careerforge collect --path ~/code --backfill',
+    run: (args, env) =>
+      collect(env, {
+        path: flag(args, 'path') ?? process.cwd(),
+        backfill: args.includes('--backfill'),
+        ...(flag(args, 'limit') === undefined ? {} : { limit: numericFlag(args, 'limit', 1000) }),
+      }),
+  },
   init: {
     summary: 'Create the local store',
     usage: 'careerforge init',
@@ -146,7 +158,10 @@ Example:
  * Keeping the process boundary out of here is what makes the whole command
  * surface testable without spawning.
  */
-export function run(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): CliResult {
+export async function run(
+  argv: readonly string[],
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<CliResult> {
   const [command, ...rest] = argv;
 
   if (command === undefined || command === '--help' || command === '-h' || command === 'help') {
@@ -168,7 +183,7 @@ export function run(argv: readonly string[], env: NodeJS.ProcessEnv = process.en
   }
 
   try {
-    return spec.run(rest, env);
+    return await spec.run(rest, env);
   } catch (error) {
     // A command must never surface a raw stack trace. Anything unhandled is a
     // bug, and the message should still tell the user what to do next.

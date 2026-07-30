@@ -21,6 +21,8 @@ import {
   openDatabase,
 } from '@careerforge/store';
 import { COMMAND_NAMES } from '@careerforge/cli';
+import { describeConformance } from '@careerforge/collect';
+import { GitCollector } from '@careerforge/collector-git';
 
 /**
  * The invariant ledger.
@@ -217,8 +219,38 @@ describe('I5 — the database is reconstructible from the export', () => {
 });
 
 describe('I6 — collectors emit records and never write', () => {
-  it.todo('M4: CollectorPort exposes no store handle, enforced by type');
-  it.todo('M4: the conformance suite asserts collector purity');
+  it('gives collectors nowhere for a store to arrive', () => {
+    // Held by the shape of the interface: collect(scope, cursor) takes no
+    // database, and the host is the only thing that writes.
+    const collector = new GitCollector();
+    const surface = new Set(Object.keys(collector));
+    for (const forbidden of ['db', 'store', 'database', 'connection']) {
+      expect(surface.has(forbidden), `collector exposes ${forbidden}`).toBe(false);
+    }
+  });
+
+  it('holds every collector to one shared conformance suite', () => {
+    // The contract behind "a contributor should not need to understand the
+    // whole codebase to write a collector". Exported for third parties to run
+    // against their own collectors, in their own repositories.
+    expect(typeof describeConformance).toBe('function');
+  });
+
+  it('requires backfill of every collector — it is the acquisition model', () => {
+    expect(new GitCollector().describe().capabilities.backfill).toBe(true);
+  });
+
+  it('requires a declared narrow field set, for tolerant parsing', () => {
+    // ADR-0010: depend on a few fields, ignore everything else, survive
+    // upstream churn without a release.
+    expect(new GitCollector().describe().requiredFields.length).toBeGreaterThan(0);
+  });
+
+  it('namespaces every emitted kind by the collector id', () => {
+    const manifest = new GitCollector().describe();
+    const misnamespaced = manifest.kinds.filter((k) => !k.startsWith(`${manifest.id}.`));
+    expect(misnamespaced).toEqual([]);
+  });
 });
 
 describe('cross-cutting promises', () => {

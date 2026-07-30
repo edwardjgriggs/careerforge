@@ -19,10 +19,13 @@ export default defineConfig({
       '@careerforge/generate': pkg('generate'),
       '@careerforge/ui': pkg('ui'),
       '@careerforge/cli': pkg('cli'),
+      '@careerforge/collector-git': fileURLToPath(
+        new URL('./collectors/git/src/index.ts', import.meta.url),
+      ),
     },
   },
   test: {
-    include: ['packages/**/*.test.ts', 'test/**/*.test.ts'],
+    include: ['packages/**/*.test.ts', 'collectors/**/*.test.ts', 'test/**/*.test.ts'],
     environment: 'node',
     // Boundary tests write fixture files into package sources and lint them.
     // Running those in parallel with each other would be fine; running them in

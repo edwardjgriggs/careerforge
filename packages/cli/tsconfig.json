@@ -28,6 +28,9 @@
     },
     {
       "path": "../ui"
+    },
+    {
+      "path": "../../collectors/git"
     }
   ]
 }

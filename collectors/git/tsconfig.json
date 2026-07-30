@@ -9,13 +9,10 @@
   "exclude": ["**/*.boundary-fixture.ts", "**/*.test.ts"],
   "references": [
     {
-      "path": "../domain"
+      "path": "../../packages/domain"
     },
     {
-      "path": "../protocol"
-    },
-    {
-      "path": "../store"
+      "path": "../../packages/collect"
     }
   ]
 }

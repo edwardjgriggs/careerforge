@@ -23,7 +23,8 @@
     "@careerforge/collect": "0.1.0",
     "@careerforge/enrich": "0.1.0",
     "@careerforge/generate": "0.1.0",
-    "@careerforge/ui": "0.1.0"
+    "@careerforge/ui": "0.1.0",
+    "@careerforge/collector-git": "0.1.0"
   },
   "scripts": {
     "build": "tsc --build"

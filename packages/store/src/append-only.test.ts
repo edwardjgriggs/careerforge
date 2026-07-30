@@ -173,7 +173,12 @@ describe('trigger coverage', () => {
   it('found the tables it claims to be checking', () => {
     // Guards the guard: if the discovery query silently returned nothing,
     // both tests above would pass vacuously.
+    //
+    // This list is meant to need updating. A new table appearing here is the
+    // moment to ask whether it belongs inside the append-only model — which
+    // is exactly the question `collector_cursors` had to answer in M4.
     expect(domainTables().sort()).toEqual([
+      'collector_cursors',
       'evidence',
       'evidence_content',
       'identities',
