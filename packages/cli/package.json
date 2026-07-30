@@ -1,0 +1,34 @@
+{
+  "name": "@careerforge/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CareerForge command-line interface.",
+  "license": "Apache-2.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@careerforge/domain": "0.1.0",
+    "@careerforge/store": "0.1.0",
+    "@careerforge/policy": "0.1.0",
+    "@careerforge/collect": "0.1.0",
+    "@careerforge/enrich": "0.1.0",
+    "@careerforge/generate": "0.1.0",
+    "@careerforge/ui": "0.1.0"
+  },
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "bin": {
+    "careerforge": "./dist/bin.js"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@careerforge/policy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Consent, sensitivity, redaction, and egress enforcement. The only package permitted a network client.",
+  "license": "Apache-2.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@careerforge/domain": "0.1.0"
+  },
+  "scripts": {
+    "build": "tsc --build"
+  }
+}

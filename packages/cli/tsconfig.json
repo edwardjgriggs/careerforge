@@ -1,0 +1,33 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["**/*.boundary-fixture.ts", "**/*.test.ts"],
+  "references": [
+    {
+      "path": "../domain"
+    },
+    {
+      "path": "../store"
+    },
+    {
+      "path": "../policy"
+    },
+    {
+      "path": "../collect"
+    },
+    {
+      "path": "../enrich"
+    },
+    {
+      "path": "../generate"
+    },
+    {
+      "path": "../ui"
+    }
+  ]
+}

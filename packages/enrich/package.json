@@ -1,0 +1,26 @@
+{
+  "name": "@careerforge/enrich",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Provider port, enrichment runs, and prompt templates.",
+  "license": "Apache-2.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@careerforge/domain": "0.1.0",
+    "@careerforge/policy": "0.1.0"
+  },
+  "scripts": {
+    "build": "tsc --build"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["**/*.boundary-fixture.ts", "**/*.test.ts"],
+  "references": [{ "path": "../domain" }]
+}

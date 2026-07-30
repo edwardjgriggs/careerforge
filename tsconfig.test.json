@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "incremental": false,
+    "types": ["node"],
+    "moduleResolution": "Bundler",
+    "module": "ESNext",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@careerforge/*": ["./packages/*/src/index.ts"]
+    }
+  },
+  "include": ["packages/**/*.test.ts", "test/**/*.ts", "vitest.config.ts"]
+}

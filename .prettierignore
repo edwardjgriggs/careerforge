@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+package-lock.json
+
+# Design documents are hand-formatted; Prettier reflows tables and code fences
+# in ways that make review diffs unreadable.
+Vision.md
+Architecture.md
+IMPLEMENTATION_PLAN.md
+docs/

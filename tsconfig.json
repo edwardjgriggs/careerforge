@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/domain" },
+    { "path": "packages/protocol" },
+    { "path": "packages/store" },
+    { "path": "packages/policy" },
+    { "path": "packages/collect" },
+    { "path": "packages/enrich" },
+    { "path": "packages/generate" },
+    { "path": "packages/ui" },
+    { "path": "packages/cli" }
+  ]
+}
