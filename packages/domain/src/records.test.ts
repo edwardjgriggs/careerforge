@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { classifyEdit, isExportable, revisionOf, REVIEW_STATES, type Asset } from './assets.js';
 import type { SupportFailureCode } from './claims.js';
-import { correctionOf, isTombstoned, isUserConfirmed, type Evidence } from './evidence.js';
+import { correctionOf, isUserConfirmed, type Evidence } from './evidence.js';
 import {
   isCacheHit,
   isStale,
-  supersede,
+  supersedingEnrichment,
   type Enrichment,
   type EnrichmentRun,
 } from './enrichment.js';
@@ -43,6 +43,7 @@ import {
   SELF,
   type IdentityId,
 } from './subject.js';
+import { currentRecords, lineageOf, supersededIds } from './lineage.js';
 import { toInstant } from './time.js';
 import {
   suppressedIds,
@@ -78,7 +79,6 @@ const evidence = (overrides: Partial<Evidence> = {}): Evidence => ({
   attributes: {},
   groupingHint: null,
   supersedes: null,
-  tombstonedBy: null,
   collectorVersion: '1.0.0',
   sourceFormatVersion: null,
   ...overrides,
@@ -114,25 +114,62 @@ describe('evidence corrections', () => {
     expect(corrected.contentHash).not.toBe(original.contentHash);
   });
 
-  it('clears any tombstone on the correction', () => {
-    const original = evidence({ tombstonedBy: 'tomb-1' as TombstoneId });
-    const corrected = correctionOf(
-      original,
-      {},
-      { id: 'ev-2' as EvidenceId, contentHash: 'ch2', recordedAt: T0 },
-    );
-    expect(corrected.tombstonedBy).toBeNull();
-  });
-
   it('recognises user-confirmed evidence', () => {
     expect(isUserConfirmed(evidence({ evidenceClass: 'user_confirmed' }))).toBe(true);
     expect(isUserConfirmed(evidence({ evidenceClass: 'imported' }))).toBe(false);
     expect(isUserConfirmed(evidence({ evidenceClass: 'derived' }))).toBe(false);
   });
+});
 
-  it('recognises a tombstoned record', () => {
-    expect(isTombstoned(evidence({ tombstonedBy: 'tomb-1' as TombstoneId }))).toBe(true);
-    expect(isTombstoned(evidence())).toBe(false);
+// ─────────────────────────────────────────────────────────────────────────
+describe('lineage — current state is derived, never stored', () => {
+  // ADR-0013: there is no `tombstonedBy` column to set, because setting one
+  // would be an UPDATE. Suppression and supersession are both derived.
+  const chain = [
+    evidence({ id: 'ev-1' as EvidenceId }),
+    evidence({ id: 'ev-2' as EvidenceId, supersedes: 'ev-1' as EvidenceId, title: 'v2' }),
+    evidence({ id: 'ev-3' as EvidenceId, supersedes: 'ev-2' as EvidenceId, title: 'v3' }),
+    evidence({ id: 'ev-9' as EvidenceId, title: 'unrelated' }),
+  ];
+
+  it('derives superseded ids by looking forward', () => {
+    expect([...supersededIds(chain)].sort()).toEqual(['ev-1', 'ev-2']);
+  });
+
+  it('keeps only the newest record in a chain', () => {
+    expect(currentRecords(chain).map((e) => e.id)).toEqual(['ev-3', 'ev-9']);
+  });
+
+  it('drops a suppressed record without any column being set', () => {
+    const suppressed = suppressedIds([
+      {
+        id: 'tomb-1' as TombstoneId,
+        targetKind: 'evidence',
+        targetId: 'ev-9',
+        reason: null,
+        scope: 'hidden',
+        recordedAt: T0,
+      },
+    ]);
+    expect(currentRecords(chain, suppressed).map((e) => e.id)).toEqual(['ev-3']);
+  });
+
+  it('walks a chain back to its origin', () => {
+    const newest = chain[2]!;
+    expect(lineageOf(newest, chain).map((e) => e.id)).toEqual(['ev-3', 'ev-2', 'ev-1']);
+  });
+
+  it('does not loop on a corrupted self-referential chain', () => {
+    const cyclic = [
+      evidence({ id: 'a' as EvidenceId, supersedes: 'b' as EvidenceId }),
+      evidence({ id: 'b' as EvidenceId, supersedes: 'a' as EvidenceId }),
+    ];
+    expect(lineageOf(cyclic[0]!, cyclic).length).toBeLessThanOrEqual(2);
+  });
+
+  it('handles a record whose predecessor is missing', () => {
+    const orphan = evidence({ id: 'x' as EvidenceId, supersedes: 'gone' as EvidenceId });
+    expect(lineageOf(orphan, [orphan]).map((e) => e.id)).toEqual(['x']);
   });
 });
 
@@ -143,9 +180,14 @@ describe('work units', () => {
   });
 
   it('refuses to rewrite a pinned unit', () => {
-    expect(isRewritable({ pinned: false, tombstonedBy: null })).toBe(true);
-    expect(isRewritable({ pinned: true, tombstonedBy: null })).toBe(false);
-    expect(isRewritable({ pinned: false, tombstonedBy: 'tomb' as TombstoneId })).toBe(false);
+    expect(isRewritable({ id: 'wu-1' as WorkUnitId, pinned: false })).toBe(true);
+    expect(isRewritable({ id: 'wu-1' as WorkUnitId, pinned: true })).toBe(false);
+  });
+
+  it('refuses to rewrite a suppressed unit', () => {
+    expect(isRewritable({ id: 'wu-1' as WorkUnitId, pinned: false }, new Set(['wu-1']))).toBe(
+      false,
+    );
   });
 
   it('treats human-assigned membership as pinning', () => {
@@ -207,6 +249,7 @@ describe('gaps', () => {
     answeredBy: null,
     askedCount: 0,
     lastAskedAt: null,
+    supersedes: null,
     ...overrides,
   });
 
@@ -264,23 +307,42 @@ describe('gaps', () => {
     ).toBe(false);
   });
 
-  it('records asking without mutating the original', () => {
+  it('records asking as a new record superseding the old one', () => {
     const original = gap();
-    const asked = markAsked(original, T0);
+    const asked = markAsked(original, 'gap-2' as GapId, T0);
+    expect(asked.id).toBe('gap-2');
+    expect(asked.supersedes).toBe(original.id);
     expect(asked.askedCount).toBe(1);
     expect(asked.lastAskedAt).toBe(T0);
+    // The original record is untouched — gaps are append-only (ADR-0013).
     expect(original.askedCount).toBe(0);
+    expect(original.supersedes).toBeNull();
+  });
+
+  it('preserves the whole interaction history through the chain', () => {
+    // "We asked twice and they declined" is exactly the signal that should
+    // stop the interview engine asking a third time.
+    const first = gap();
+    const asked1 = markAsked(first, 'gap-2' as GapId, T0);
+    const asked2 = markAsked(asked1, 'gap-3' as GapId, T0);
+    const declined = markDeclined(asked2, 'gap-4' as GapId);
+
+    const all = [first, asked1, asked2, declined];
+    expect(currentRecords(all).map((g) => g.id)).toEqual(['gap-4']);
+    expect(lineageOf(declined, all).map((g) => g.id)).toEqual(['gap-4', 'gap-3', 'gap-2', 'gap-1']);
+    expect(declined.askedCount).toBe(2);
   });
 
   it('closes a gap when answered, linking the evidence', () => {
-    const answered = markAnswered(gap(), 'ev-9' as EvidenceId);
+    const answered = markAnswered(gap(), 'gap-2' as GapId, 'ev-9' as EvidenceId);
     expect(answered.status).toBe('answered');
     expect(answered.answeredBy).toBe('ev-9');
+    expect(answered.supersedes).toBe('gap-1');
     expect(isAskable(answered)).toBe(false);
   });
 
   it('closes a gap when declined', () => {
-    expect(isAskable(markDeclined(gap()))).toBe(false);
+    expect(isAskable(markDeclined(gap(), 'gap-2' as GapId))).toBe(false);
   });
 });
 
@@ -333,13 +395,19 @@ describe('enrichment', () => {
       enrichmentType: 'skills',
       value: ['typescript'],
       confidence: 0.8,
-      supersededBy: null,
+      supersedes: null,
       recordedAt: T0,
     };
-    const superseded = supersede(original, 'enr-2' as EnrichmentId);
-    expect(superseded.supersededBy).toBe('enr-2');
-    expect(superseded.value).toEqual(['typescript']);
-    expect(original.supersededBy).toBeNull();
+    const replacement = supersedingEnrichment(original, {
+      ...original,
+      id: 'enr-2' as EnrichmentId,
+      value: ['typescript', 'sqlite'],
+    });
+    expect(replacement.id).toBe('enr-2');
+    expect(replacement.supersedes).toBe('enr-1');
+    // The earlier interpretation stays queryable forever.
+    expect(original.value).toEqual(['typescript']);
+    expect(original.supersedes).toBeNull();
   });
 });
 

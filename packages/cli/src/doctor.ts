@@ -1,6 +1,15 @@
 import { existsSync } from 'node:fs';
 import { arch, platform, release } from 'node:os';
 
+import {
+  checkIntegrity,
+  closeDatabase,
+  LATEST_SCHEMA_VERSION,
+  openDatabase,
+  schemaVersion,
+  type Db,
+} from '@careerforge/store';
+
 import { resolvePaths } from './paths.js';
 
 export type CheckStatus = 'ok' | 'warn' | 'fail';
@@ -15,8 +24,8 @@ export interface Check {
   readonly fix?: string;
 }
 
-export const MINIMUM_NODE_MAJOR = 20;
-export const MINIMUM_NODE_MINOR = 11;
+export const MINIMUM_NODE_MAJOR = 22;
+export const MINIMUM_NODE_MINOR = 0;
 
 /** Parse a `v22.23.1`-style version into numeric parts. Returns null if unparseable. */
 export function parseNodeVersion(raw: string): { major: number; minor: number } | null {
@@ -80,11 +89,98 @@ export function checkHome(env: NodeJS.ProcessEnv = process.env): Check {
 }
 
 /**
+ * Inspect the store without creating one.
+ *
+ * `doctor` is a diagnostic, so it must never have side effects — running it on
+ * a machine with no store should say "no store", not quietly create one.
+ */
+export function checkStore(env: NodeJS.ProcessEnv = process.env): Check[] {
+  const paths = resolvePaths(env);
+
+  if (!existsSync(paths.database)) {
+    return [
+      {
+        id: 'store',
+        label: 'Evidence store',
+        status: 'warn',
+        detail: `No database at ${paths.database}`,
+        fix: 'It will be created the first time CareerForge collects anything.',
+      },
+    ];
+  }
+
+  let opened: { db: Db } | null = null;
+  try {
+    opened = openDatabase({ path: paths.database, migrate: false, mustExist: true });
+    const version = schemaVersion(opened.db);
+    const integrity = checkIntegrity(opened.db);
+    const evidenceCount = (
+      opened.db.prepare('SELECT COUNT(*) AS n FROM evidence_current').get() as { n: number }
+    ).n;
+
+    const checks: Check[] = [];
+
+    if (version < LATEST_SCHEMA_VERSION) {
+      checks.push({
+        id: 'store.schema',
+        label: 'Schema',
+        status: 'warn',
+        detail: `v${version}, this build expects v${LATEST_SCHEMA_VERSION}`,
+        fix: 'Migrations run automatically on the next command. A backup is taken first.',
+      });
+    } else if (version > LATEST_SCHEMA_VERSION) {
+      checks.push({
+        id: 'store.schema',
+        label: 'Schema',
+        status: 'fail',
+        detail: `v${version} was written by a newer CareerForge; this build supports v${LATEST_SCHEMA_VERSION}`,
+        fix: 'Upgrade CareerForge. An older build must not write to a newer store.',
+      });
+    } else {
+      checks.push({ id: 'store.schema', label: 'Schema', status: 'ok', detail: `v${version}` });
+    }
+
+    checks.push(
+      integrity.ok
+        ? { id: 'store.integrity', label: 'Integrity', status: 'ok', detail: 'no problems found' }
+        : {
+            id: 'store.integrity',
+            label: 'Integrity',
+            status: 'fail',
+            detail: integrity.problems.slice(0, 3).join('; '),
+            fix: 'Restore from a backup in the backups directory, or rebuild from your JSON export.',
+          },
+    );
+
+    checks.push({
+      id: 'store.evidence',
+      label: 'Evidence',
+      status: 'ok',
+      detail: `${evidenceCount} current record${evidenceCount === 1 ? '' : 's'}`,
+    });
+
+    return checks;
+  } catch (error) {
+    return [
+      {
+        id: 'store',
+        label: 'Evidence store',
+        status: 'fail',
+        detail: error instanceof Error ? error.message : String(error),
+        fix: 'The database may be corrupt or locked by another process. Check the backups directory.',
+      },
+    ];
+  } finally {
+    if (opened !== null) closeDatabase(opened.db);
+  }
+}
+
+/**
  * Doctor never throws. A diagnostic tool that crashes is worse than none, so
  * every check returns a result rather than raising.
  */
 export function runChecks(env: NodeJS.ProcessEnv = process.env): Check[] {
-  return [checkNode(), checkPlatform(), checkHome(env)];
+  return [checkNode(), checkPlatform(), checkHome(env), ...checkStore(env)];
 }
 
 const SYMBOL: Record<CheckStatus, string> = { ok: '+', warn: '!', fail: 'x' };

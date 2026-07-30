@@ -105,6 +105,31 @@ export function deriveContentHash(digest: Digest, fingerprint: ContentFingerprin
 }
 
 /**
+ * Attributes in canonical form: keys sorted, array members sorted.
+ *
+ * Hashing already treats key order and array order as meaningless, so storage
+ * must too. Without this, two collectors that build the same object
+ * differently produce one content hash and two different stored
+ * representations, and *which one you get depends on which arrived first*.
+ *
+ * That is not a cosmetic difference. It makes the stored state a function of
+ * ingestion order, which breaks convergence, and it would make the JSON
+ * export byte-different across machines for identical facts — the exact
+ * property invariant I5 depends on.
+ *
+ * The corollary is deliberate: declaring an attribute a `string[]` declares it
+ * a *set*. If order carries meaning, it is not an array attribute.
+ */
+export function canonicalAttributes(attributes: AttributeMap): AttributeMap {
+  const canonical: Record<string, AttributeValue> = {};
+  for (const key of Object.keys(attributes).sort()) {
+    const value = attributes[key]!;
+    canonical[key] = Array.isArray(value) ? [...value].sort() : value;
+  }
+  return canonical;
+}
+
+/**
  * Whether a freshly collected artifact differs from what is already stored.
  *
  * The whole of change detection: same natural key, different content hash

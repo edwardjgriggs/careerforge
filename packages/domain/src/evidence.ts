@@ -1,5 +1,5 @@
 import type { AttributeMap } from './attributes.js';
-import type { EvidenceId, TombstoneId } from './ids.js';
+import type { EvidenceId } from './ids.js';
 import type { Sensitivity } from './sensitivity.js';
 import type { Attribution } from './subject.js';
 import type { Instant } from './time.js';
@@ -82,9 +82,14 @@ export interface Evidence {
   /** Hint for work-unit grouping. The core groups; collectors only hint. */
   readonly groupingHint: string | null;
 
-  // ── Append-only lineage ─────────────────────────────────────────────────
+  /**
+   * The earlier record this corrects. Forward-pointing only.
+   *
+   * There is deliberately no `tombstonedBy` field: setting one would be an
+   * `UPDATE` on a row the append-only rule forbids touching. Suppression is
+   * derived by joining to the tombstone set instead. See ADR-0013.
+   */
   readonly supersedes: EvidenceId | null;
-  readonly tombstonedBy: TombstoneId | null;
 
   // ── Provenance of collection itself ─────────────────────────────────────
   readonly collectorVersion: string;
@@ -120,15 +125,6 @@ export interface EvidenceDraft {
   readonly sourceFormatVersion: string | null;
 }
 
-/** Visible in current views: neither tombstoned nor superseded. */
-export function isCurrent(evidence: Evidence, supersededIds: ReadonlySet<string>): boolean {
-  return evidence.tombstonedBy === null && !supersededIds.has(evidence.id);
-}
-
-export function isTombstoned(evidence: Evidence): boolean {
-  return evidence.tombstonedBy !== null;
-}
-
 /**
  * Whether a claim may treat this evidence as a fact the user stands behind.
  *
@@ -158,6 +154,5 @@ export function correctionOf(
     contentHash: minted.contentHash,
     recordedAt: minted.recordedAt,
     supersedes: original.id,
-    tombstonedBy: null,
   };
 }

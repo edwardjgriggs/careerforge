@@ -13,6 +13,7 @@ import {
   type SupportNode,
 } from '@careerforge/domain';
 import type { EnrichmentId, EvidenceId } from '@careerforge/domain';
+import { closeDatabase, IN_MEMORY, openDatabase } from '@careerforge/store';
 
 /**
  * The invariant ledger.
@@ -59,9 +60,6 @@ describe('I1 — the domain layer imports no adapter, no network, no AI', () => 
 
 describe('I2 — no UPDATE or DELETE against domain tables', () => {
   it('is expressed in the domain as supersede-and-tombstone', () => {
-    // The storage-level enforcement (SQLite triggers) arrives in M2. What is
-    // testable today is that the domain offers no mutation vocabulary at all:
-    // corrections produce new records, and suppression is a separate record.
     const suppressed = suppressedIds([
       {
         id: 'tomb-1' as never,
@@ -75,7 +73,61 @@ describe('I2 — no UPDATE or DELETE against domain tables', () => {
     expect(suppressed.has('ev-1')).toBe(true);
   });
 
-  it.todo('M2: SQLite triggers reject UPDATE and DELETE on every domain table');
+  it('is enforced by the database, not by convention', () => {
+    // Raw SQL, bypassing every repository and every good intention.
+    const { db } = openDatabase({ path: IN_MEMORY });
+    try {
+      db.prepare(
+        `INSERT INTO evidence (id, schema_version, collector_id, source_uri, natural_key,
+           content_hash, kind, evidence_class, sensitivity, occurred_at, recorded_at, collector_version)
+         VALUES ('ev-1',1,'git','u','nk','ch','git.commit','imported','public',
+                 '2026-07-30T00:00:00.000Z','2026-07-30T00:00:00.000Z','1.0.0')`,
+      ).run();
+      expect(() => db.prepare(`UPDATE evidence SET kind='x'`).run()).toThrow(/append-only/);
+      expect(() => db.prepare(`DELETE FROM evidence`).run()).toThrow(/append-only/);
+    } finally {
+      closeDatabase(db);
+    }
+  });
+
+  it('covers every domain table, with no exempt list to remember', () => {
+    // ADR-0013 made append-only universal. The per-table coverage check lives
+    // in packages/store/src/append-only.test.ts and fails if a table is added
+    // without its guards.
+    const { db } = openDatabase({ path: IN_MEMORY });
+    try {
+      const tables = (
+        db
+          .prepare(
+            `SELECT name FROM sqlite_master
+             WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '%_fts%'`,
+          )
+          .all() as { name: string }[]
+      ).map((r) => r.name);
+      const triggers = new Set(
+        (
+          db.prepare(`SELECT name FROM sqlite_master WHERE type='trigger'`).all() as {
+            name: string;
+          }[]
+        ).map((r) => r.name),
+      );
+      expect(tables.filter((t) => !triggers.has(`${t}_no_update`))).toEqual([]);
+    } finally {
+      closeDatabase(db);
+    }
+  });
+
+  it('reads resolve current state through views, never base tables', () => {
+    const { db } = openDatabase({ path: IN_MEMORY });
+    try {
+      const views = (
+        db.prepare(`SELECT name FROM sqlite_master WHERE type='view'`).all() as { name: string }[]
+      ).map((r) => r.name);
+      expect(views).toContain('evidence_current');
+    } finally {
+      closeDatabase(db);
+    }
+  });
 });
 
 describe('I3 — every outbound call passes through the Policy Engine', () => {

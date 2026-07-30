@@ -31,6 +31,15 @@ export interface Gap {
   readonly answeredBy: EvidenceId | null;
   readonly askedCount: number;
   readonly lastAskedAt: Instant | null;
+  /**
+   * The earlier gap record this one replaces.
+   *
+   * Gaps are append-only like everything else (ADR-0013): being asked,
+   * answered, or declined writes a new row rather than editing one. The chain
+   * is a complete record of the interaction, which is what lets the interview
+   * engine know it has already asked twice and been declined.
+   */
+  readonly supersedes: GapId | null;
 }
 
 /**
@@ -87,17 +96,31 @@ export function isAlreadyAnswered(
   );
 }
 
+/**
+ * Every transition mints a new record superseding the old one.
+ *
+ * The `id` parameter is not ceremony: it is what keeps gaps inside the
+ * append-only model (ADR-0013) instead of carving out an exception for the
+ * one table whose state visibly changes.
+ */
+
 /** Record that a gap was put to the user. */
-export function markAsked(gap: Gap, at: Instant): Gap {
-  return { ...gap, askedCount: gap.askedCount + 1, lastAskedAt: at };
+export function markAsked(gap: Gap, id: GapId, at: Instant): Gap {
+  return {
+    ...gap,
+    id,
+    askedCount: gap.askedCount + 1,
+    lastAskedAt: at,
+    supersedes: gap.id,
+  };
 }
 
 /** Record an answer. The answer becomes evidence; the gap closes for good. */
-export function markAnswered(gap: Gap, evidenceId: EvidenceId): Gap {
-  return { ...gap, status: 'answered', answeredBy: evidenceId };
+export function markAnswered(gap: Gap, id: GapId, evidenceId: EvidenceId): Gap {
+  return { ...gap, id, status: 'answered', answeredBy: evidenceId, supersedes: gap.id };
 }
 
 /** The user chose not to answer. Never asked again for this work unit. */
-export function markDeclined(gap: Gap): Gap {
-  return { ...gap, status: 'declined' };
+export function markDeclined(gap: Gap, id: GapId): Gap {
+  return { ...gap, id, status: 'declined', supersedes: gap.id };
 }

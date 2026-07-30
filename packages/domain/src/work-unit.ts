@@ -1,4 +1,4 @@
-import type { EvidenceId, TombstoneId, WorkUnitId } from './ids.js';
+import type { EvidenceId, WorkUnitId } from './ids.js';
 import { maxSensitivity, type Sensitivity } from './sensitivity.js';
 import type { Instant } from './time.js';
 
@@ -31,8 +31,8 @@ export interface WorkUnit {
   readonly groupingKey: string;
   /** Set once a human edits membership. Strategies must never touch it. */
   readonly pinned: boolean;
+  /** Forward-pointing only; suppression is derived by join (ADR-0013). */
   readonly supersedes: WorkUnitId | null;
-  readonly tombstonedBy: TombstoneId | null;
 }
 
 export const WORK_UNIT_SCHEMA_VERSION = 1;
@@ -99,8 +99,11 @@ export function deriveSensitivity(memberSensitivities: readonly Sensitivity[]): 
  * Without this, improving the algorithm silently destroys curation — the
  * fastest way to lose the trust of someone holding a decade of history here.
  */
-export function isRewritable(unit: Pick<WorkUnit, 'pinned' | 'tombstonedBy'>): boolean {
-  return !unit.pinned && unit.tombstonedBy === null;
+export function isRewritable(
+  unit: Pick<WorkUnit, 'id' | 'pinned'>,
+  suppressed: ReadonlySet<string> = new Set(),
+): boolean {
+  return !unit.pinned && !suppressed.has(unit.id);
 }
 
 /** Membership assigned by a person pins the unit against future strategies. */

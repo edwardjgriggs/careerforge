@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { validateAttributes, type AttributeMap, type AttributeSchema } from './attributes.js';
 import {
+  canonicalAttributes,
   canonicalContentInput,
   canonicalNaturalKeyInput,
   deriveContentHash,
@@ -331,6 +332,59 @@ describe('content fingerprinting', () => {
     const hash = deriveContentHash(fakeDigest, base);
     for (let i = 0; i < 100; i++) {
       expect(deriveContentHash(fakeDigest, base)).toBe(hash);
+    }
+  });
+});
+
+describe('canonical attribute storage', () => {
+  it('sorts keys so representation matches the hash', () => {
+    // Without this, two objects that hash identically are *stored*
+    // differently, and which one you get depends on which arrived first —
+    // making stored state a function of ingestion order.
+    const a = canonicalAttributes({ repo: 'cf', insertions: 1 });
+    const b = canonicalAttributes({ insertions: 1, repo: 'cf' });
+    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+    expect(Object.keys(a)).toEqual(['insertions', 'repo']);
+  });
+
+  it('sorts array members — declaring a string[] declares a set', () => {
+    const a = canonicalAttributes({ coauthors: ['grace', 'ada'] });
+    const b = canonicalAttributes({ coauthors: ['ada', 'grace'] });
+    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+  });
+
+  it('leaves scalar values untouched', () => {
+    const attributes = { n: 42, flag: true, name: 'x' };
+    expect(canonicalAttributes(attributes)).toEqual(attributes);
+  });
+
+  it('does not mutate its input', () => {
+    const original = { coauthors: ['grace', 'ada'] };
+    canonicalAttributes(original);
+    expect(original.coauthors).toEqual(['grace', 'ada']);
+  });
+
+  it('agrees with the content hash about what is equal', () => {
+    // The property that ties the two together: if canonicalisation says two
+    // attribute bags are the same, hashing must agree, and vice versa.
+    const pairs: [AttributeMap, AttributeMap][] = [
+      [
+        { a: 1, b: 2 },
+        { b: 2, a: 1 },
+      ],
+      [{ tags: ['x', 'y'] }, { tags: ['y', 'x'] }],
+      [
+        { a: 1, tags: ['p', 'q'] },
+        { tags: ['q', 'p'], a: 1 },
+      ],
+    ];
+    for (const [left, right] of pairs) {
+      const sameStored =
+        JSON.stringify(canonicalAttributes(left)) === JSON.stringify(canonicalAttributes(right));
+      const sameHashed =
+        canonicalContentInput({ title: 't', summary: null, excerpt: null, attributes: left }) ===
+        canonicalContentInput({ title: 't', summary: null, excerpt: null, attributes: right });
+      expect(sameStored, 'storage and hashing disagreed').toBe(sameHashed);
     }
   });
 });

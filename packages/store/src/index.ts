@@ -1,9 +1,44 @@
 /**
  * `@careerforge/store`
  *
- * SQLite adapter, migration runner, append-only enforcement, export, and rebuild.
+ * SQLite is canonical (ADR-0003). This package is the only thing that talks
+ * to it.
  *
- * Implemented in M2. See IMPLEMENTATION_PLAN.md.
+ * Two guarantees are enforced below the code rather than by convention:
+ * append-only writes, by trigger; and current-state reads, by view. A mistake
+ * here fails loudly instead of quietly corrupting a decade of career history.
  */
 
 export const PACKAGE_NAME = '@careerforge/store' as const;
+
+export {
+  openDatabase,
+  closeDatabase,
+  checkIntegrity,
+  IN_MEMORY,
+  type IntegrityResult,
+  type OpenOptions,
+  type OpenResult,
+} from './database.js';
+
+export {
+  migrate,
+  schemaVersion,
+  LATEST_SCHEMA_VERSION,
+  MIGRATIONS,
+  MigrationFailedError,
+  SchemaTooNewError,
+  type Db,
+  type Migration,
+  type MigrationReport,
+} from './migrations/index.js';
+
+export { EvidenceStore, type EmitResult } from './evidence-store.js';
+
+export {
+  nodePlatform,
+  deterministicPlatform,
+  sha256,
+  systemClock,
+  systemEntropy,
+} from './platform.js';

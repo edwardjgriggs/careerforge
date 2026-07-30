@@ -33,7 +33,11 @@ export interface Enrichment {
   /** Shape depends on `enrichmentType`. Structured output, never prose. */
   readonly value: unknown;
   readonly confidence: number | null;
-  readonly supersededBy: EnrichmentId | null;
+  /**
+   * The earlier enrichment this one replaces. Forward-pointing, so a new
+   * interpretation never has to write to an existing row (ADR-0013).
+   */
+  readonly supersedes: EnrichmentId | null;
   readonly recordedAt: Instant;
 }
 
@@ -92,7 +96,16 @@ export function isStale(run: Pick<EnrichmentRun, 'inputHash'>, currentInputHash:
   return run.inputHash !== currentInputHash;
 }
 
-/** Enrichments are never edited. A newer one supersedes an older one. */
-export function supersede(previous: Enrichment, replacementId: EnrichmentId): Enrichment {
-  return { ...previous, supersededBy: replacementId };
+/**
+ * Build the replacement for an earlier enrichment.
+ *
+ * Re-running produces a new row pointing back at the old one; the old row
+ * is never touched and stays queryable forever, so "how did this read
+ * before I switched models?" remains answerable.
+ */
+export function supersedingEnrichment(
+  previous: Enrichment,
+  replacement: Omit<Enrichment, 'supersedes'>,
+): Enrichment {
+  return { ...replacement, supersedes: previous.id };
 }

@@ -91,6 +91,7 @@ export {
 
 // ── Identity derivation ───────────────────────────────────────────────────
 export {
+  canonicalAttributes,
   canonicalContentInput,
   canonicalNaturalKeyInput,
   deriveContentHash,
@@ -99,11 +100,12 @@ export {
   type ContentFingerprint,
 } from './keys.js';
 
+// ── Lineage: resolving current state from an append-only log ──────────────
+export { currentRecords, isCurrent, lineageOf, supersededIds, type Lineaged } from './lineage.js';
+
 // ── Evidence ──────────────────────────────────────────────────────────────
 export {
   correctionOf,
-  isCurrent,
-  isTombstoned,
   isUserConfirmed,
   EVIDENCE_CLASSES,
   EVIDENCE_SCHEMA_VERSION,
@@ -165,7 +167,7 @@ export {
 export {
   isCacheHit,
   isStale,
-  supersede,
+  supersedingEnrichment,
   ENRICHMENT_TYPES,
   type Enrichment,
   type EnrichmentRun,

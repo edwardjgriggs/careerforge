@@ -24,8 +24,9 @@ jobs:
         # target in most open-source projects. It is a first-class matrix
         # entry from the first commit, not something added after a bug report.
         os: [ubuntu-latest, macos-latest, windows-latest]
-        # 20.11 is the documented minimum; 22 is the development runtime.
-        node: ['20.11', '22']
+        # 22 is the documented minimum (ADR-0014: better-sqlite3 requires it,
+        # and node:sqlite does not exist on 20). 24 is the forward check.
+        node: ['22', '24']
 
     steps:
       - uses: actions/checkout@v4

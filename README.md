@@ -92,7 +92,7 @@ npm run verify
 node packages/cli/dist/bin.js doctor
 ```
 
-Requires **Node.js 20.11+**. No API key needed to build, test, or contribute.
+Requires **Node.js 22+**. No API key needed to build, test, or contribute.
 
 ## Documentation
 

@@ -13,7 +13,7 @@ npm run verify        # format check, lint, build, typecheck tests, test
 node packages/cli/dist/bin.js doctor
 ```
 
-Requires **Node.js 20.11 or newer**. No API key is required to build, test, or contribute —
+Requires **Node.js 22 or newer**. No API key is required to build, test, or contribute —
 and that is deliberate (see ADR-0005).
 
 ### Scripts
