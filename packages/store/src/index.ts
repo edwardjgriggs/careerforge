@@ -35,6 +35,19 @@ export {
 
 export { EvidenceStore, type EmitResult } from './evidence-store.js';
 
+export { BlobStore, hashToRef, isBlobRef, refToHash, type BlobRef } from './blobs.js';
+
+export {
+  canonicalJson,
+  digestTree,
+  exportStore,
+  rebuildStore,
+  ExportFormatTooNewError,
+  EXPORT_FORMAT_VERSION,
+  type ExportReport,
+  type RebuildReport,
+} from './export.js';
+
 export {
   nodePlatform,
   deterministicPlatform,

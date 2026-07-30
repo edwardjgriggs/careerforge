@@ -13,7 +13,14 @@ import {
   type SupportNode,
 } from '@careerforge/domain';
 import type { EnrichmentId, EvidenceId } from '@careerforge/domain';
-import { closeDatabase, IN_MEMORY, openDatabase } from '@careerforge/store';
+import {
+  canonicalJson,
+  closeDatabase,
+  EXPORT_FORMAT_VERSION,
+  IN_MEMORY,
+  openDatabase,
+} from '@careerforge/store';
+import { COMMAND_NAMES } from '@careerforge/cli';
 
 /**
  * The invariant ledger.
@@ -186,7 +193,27 @@ describe('I4 — every claim resolves to at least one provenance edge', () => {
 });
 
 describe('I5 — the database is reconstructible from the export', () => {
-  it.todo('M3: export -> rebuild -> export is byte-identical over 10,000 records');
+  it('has a rebuild path, and it is a first-class command', () => {
+    // The full 10,000-record round trip, and the collect -> export -> rebuild
+    // -> re-collect -> export scenario, live in
+    // packages/store/src/export.test.ts where the fixtures are.
+    expect(COMMAND_NAMES).toContain('export');
+    expect(COMMAND_NAMES).toContain('rebuild');
+  });
+
+  it('exports deterministically — no timestamp, sorted keys', () => {
+    // Determinism is the precondition for the round trip. A generation
+    // timestamp would make two exports of identical data differ.
+    const a = canonicalJson({ b: 1, a: { d: 2, c: 3 } });
+    const b = canonicalJson({ a: { c: 3, d: 2 }, b: 1 });
+    expect(a).toBe(b);
+  });
+
+  it('versions the export format separately from the schema', () => {
+    // ADR-0004: the database may be refactored freely; the export is a
+    // long-term contract with the user and changes far less often.
+    expect(EXPORT_FORMAT_VERSION).toBeGreaterThan(0);
+  });
 });
 
 describe('I6 — collectors emit records and never write', () => {

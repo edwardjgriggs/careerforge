@@ -10,13 +10,15 @@
 
 export const PACKAGE_NAME = '@careerforge/cli' as const;
 
-export { run, type CliResult } from './cli.js';
+export { run, COMMAND_NAMES, type CliResult } from './cli.js';
+export * from './commands.js';
 export {
   runChecks,
   formatChecks,
   checkNode,
   checkPlatform,
   checkHome,
+  checkStore,
   parseNodeVersion,
   MINIMUM_NODE_MAJOR,
   MINIMUM_NODE_MINOR,

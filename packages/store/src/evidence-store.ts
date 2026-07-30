@@ -294,6 +294,35 @@ export class EvidenceStore {
     return rows.map(toEvidence);
   }
 
+  /**
+   * Current evidence within a window, oldest first.
+   *
+   * Filtered on `occurredAt` — when the work happened — never `recordedAt`.
+   * "What did I do last quarter" is a question about the work, and backfill
+   * makes the two differ by years.
+   */
+  between(
+    options: { readonly from?: Instant; readonly to?: Instant; readonly limit?: number } = {},
+  ): readonly Evidence[] {
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+    if (options.from !== undefined) {
+      clauses.push('occurred_at >= ?');
+      params.push(options.from);
+    }
+    if (options.to !== undefined) {
+      clauses.push('occurred_at <= ?');
+      params.push(options.to);
+    }
+    const where = clauses.length === 0 ? '' : ` WHERE ${clauses.join(' AND ')}`;
+    params.push(options.limit ?? 500);
+
+    const rows = this.db
+      .prepare(`${SELECT_CURRENT}${where} ORDER BY occurred_at ASC, id ASC LIMIT ?`)
+      .all(...params) as EvidenceRow[];
+    return rows.map(toEvidence);
+  }
+
   count(): number {
     const row = this.db.prepare(`SELECT COUNT(*) AS n FROM evidence_current`).get() as {
       n: number;

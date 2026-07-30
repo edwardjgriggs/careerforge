@@ -11,10 +11,15 @@ it, and the record already exists.
 
 ---
 
-> ### Status: pre-alpha — M0 of 13
+> ### Status: pre-alpha — M3 of 13
 >
-> The architecture is designed and the repository is bootstrapped. **Collection, enrichment, and
-> generation are not implemented yet.** Today `careerforge doctor` works and nothing else does.
+> The persistence layer is real. Evidence can be stored, corrected, suppressed, searched, and
+> exported, and the database can be rebuilt from the export alone.
+>
+> **Nothing collects anything yet.** There are no collectors, no AI, and no career assets — so
+> there is currently no way to get evidence in except programmatically. Collectors arrive in M4.
+>
+> Working today: `init` · `doctor` · `search` · `timeline` · `export` · `rebuild` · `reindex`
 >
 > This section will always tell you the truth about what works. See
 > [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for what lands when.
