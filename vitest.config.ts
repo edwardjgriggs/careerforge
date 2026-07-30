@@ -28,7 +28,12 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['packages/**/*.test.ts', 'collectors/**/*.test.ts', 'test/**/*.test.ts'],
+    include: [
+      'packages/**/*.test.ts',
+      'collectors/**/*.test.ts',
+      'test/**/*.test.ts',
+      'eval/**/*.test.ts',
+    ],
     environment: 'node',
     // Boundary tests write fixture files into package sources and lint them.
     // Running those in parallel with each other would be fine; running them in

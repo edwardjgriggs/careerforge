@@ -308,13 +308,13 @@ Turn a stream of artifacts into units of work a human would recognize as accompl
 - `careerforge units [--project <key>]`.
 
 ### Acceptance criteria
-- [ ] Grouping over real collected data produces a plausible unit count — **not ~1,200**.
-- [ ] Sub-minute fragments below threshold are excluded (~92% of session files per measurement).
-- [ ] Re-running is deterministic: identical evidence + strategy → identical units.
-- [ ] Re-running never modifies a `pinned` unit.
-- [ ] A unit containing one `restricted` member is `restricted`.
-- [ ] Merge produces one unit superseding two; split produces two superseding one; both are reversible via supersede history.
-- [ ] `--dry-run` shows the outcome without writing.
+- [x] Grouping over real collected data produces a plausible unit count — **not ~1,200**. *(74 units from 1,204 records)*
+- [x] Sub-minute fragments below threshold are excluded.
+- [x] Re-running is deterministic: identical evidence + strategy → identical units.
+- [x] Re-running never modifies a `pinned` unit — nor recreates what a merge removed (ADR-0018).
+- [x] A unit containing one `restricted` member is `restricted`.
+- [x] Merge produces one unit superseding two; split produces two superseding one; both are reversible via supersede history.
+- [x] `--dry-run` shows the outcome without writing.
 
 ### Tests
 - Determinism: group twice, compare.
@@ -325,6 +325,26 @@ Turn a stream of artifacts into units of work a human would recognize as accompl
 
 ### Notes
 Thresholds will be wrong initially. `--dry-run` plus configuration-not-constants is what makes tuning cheap. This is the milestone most likely to need a second pass after seeing real output — expect it, and do not treat it as failure.
+
+### What implementation found
+
+The labelled corpus in `eval/grouping` was built **before** any tuning (ADR-0019), and it earned its place immediately. Five defects, three found by the corpus and two by running against a real store:
+
+1. **Interleaved branches produced four units for two accomplishments.** A single rolling group made every branch switch a new unit. Fixed by keeping several groups open at once.
+2. **A feature spanning three days split into three.** Fixed by separating gap tolerance for a shared named stream from bare proximity.
+3. **A day of aborted starts was admitted as an accomplishment**, because merging noise created apparent substance. Fixed by replacing elapsed duration with *active* duration in `SubstanceSignals` — five twenty-second fragments span ten hours and contain under two minutes of work.
+4. **Proximity chained a month of work into one unit of 839 artifacts.** Proximity is transitive: a tolerance wide enough to bridge one night bridges every night. Fixed by shortening the bare-proximity gap to 6 hours.
+5. **A trunk branch was mistaken for a statement of intent.** `main`, `master` and a detached `HEAD` are where work lands when nobody said anything. Fixed with a configurable `trunkStreams` list.
+
+Every default in `DEFAULT_GROUPING_CONFIG` now has a labelled case behind it.
+
+Two ADRs: **ADR-0018** (curation is protected by evidence, not by grouping key — merging two units otherwise let the next run recreate them) and **ADR-0019** (grouping quality is measured).
+
+### Carried forward
+
+- **No source-based Work Unit types.** A unit is a coherent piece of work regardless of which collector saw the evidence, and the corpus asserts it (`programmatic-and-human-together`). If data later shows programmatic sessions need different treatment, that is an ADR, not an assumption.
+- The largest real unit is 136 programmatic sessions across two days. Bounded and honest, but a candidate for a future labelled case if it proves wrong.
+- Unit titles are the earliest human prompt in the unit, which is sometimes as thin as "Yep". Better titles are enrichment's job (M9+), not a strategy's — a strategy picks, it does not compose.
 
 ---
 

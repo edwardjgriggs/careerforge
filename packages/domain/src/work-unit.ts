@@ -63,21 +63,39 @@ export interface WorkUnitMember {
  * briefly it took.
  */
 export interface SubstanceThreshold {
-  readonly minDurationMinutes: number;
+  /** Time actually spent, summed over members — not the span they cover. */
+  readonly minActiveMinutes: number;
   readonly minDistinctArtifacts: number;
   readonly commitQualifiesAlone: boolean;
 }
 
 export interface SubstanceSignals {
-  readonly durationMinutes: number;
+  /**
+   * Sum of member durations.
+   *
+   * The signal that separates work from noise, and the span between first and
+   * last artifact does not. Five twenty-second fragments scattered across a
+   * working day span ten hours and contain under two minutes of work; the
+   * evaluation corpus admitted all five as an accomplishment until this
+   * replaced elapsed time. See `eval/grouping`.
+   */
+  readonly activeMinutes: number;
   readonly distinctArtifacts: number;
   readonly hasCommit: boolean;
 }
 
+/**
+ * A unit is substantive if it contains a completed change, or if someone
+ * actually spent time on it.
+ *
+ * Artifact count is kept as a separate qualifier for work that leaves many
+ * traces without a commit, but set high: counting artifacts is what let a day
+ * of aborted starts look like an accomplishment.
+ */
 export function meetsThreshold(signals: SubstanceSignals, threshold: SubstanceThreshold): boolean {
   if (threshold.commitQualifiesAlone && signals.hasCommit) return true;
   return (
-    signals.durationMinutes >= threshold.minDurationMinutes ||
+    signals.activeMinutes >= threshold.minActiveMinutes ||
     signals.distinctArtifacts >= threshold.minDistinctArtifacts
   );
 }

@@ -1,0 +1,8 @@
+{
+  "rationale": "Two projects touched alternately through one day. These are two accomplishments however closely they interleave in time; nobody describes switching between clients as one piece of work.",
+  "units": [
+    ["ev-api-1", "ev-api-2", "ev-api-3"],
+    ["ev-site-1", "ev-site-2", "ev-site-3"]
+  ],
+  "excluded": []
+}

@@ -1,6 +1,11 @@
 import { existsSync } from 'node:fs';
 
-import { toInstant, type Instant } from '@careerforge/domain';
+import {
+  toInstant,
+  DEFAULT_GROUPING_CONFIG,
+  type GroupingConfig,
+  type Instant,
+} from '@careerforge/domain';
 import { formatReport, runCollection, type SourceRef } from '@careerforge/collect';
 import { GitCollector } from '@careerforge/collector-git';
 import { SessionCollector, defaultTranscriptRoot } from '@careerforge/collector-session';
@@ -8,6 +13,7 @@ import {
   closeDatabase,
   CursorStore,
   EvidenceStore,
+  WorkUnitStore,
   exportStore,
   nodePlatform,
   openDatabase,
@@ -319,4 +325,110 @@ export function reindex(env: NodeJS.ProcessEnv): CommandResult {
     return failure('No store to reindex.', 'Run `careerforge init` first.');
   }
   return withStore(paths, ({ store }) => ok(`Reindexed ${store.reindex()} record(s).\n`));
+}
+
+// ── Work units ────────────────────────────────────────────────────────────
+
+export interface GroupCommandOptions {
+  readonly dryRun: boolean;
+  /** Override the idle gap, in minutes. Thresholds are configuration. */
+  readonly idleGap?: number;
+  readonly minActiveMinutes?: number;
+}
+
+/**
+ * Turn collected evidence into units of work.
+ *
+ * Safe to run repeatedly: unchanged evidence writes nothing, and a unit the
+ * user has edited is never touched.
+ */
+export function group(env: NodeJS.ProcessEnv, options: GroupCommandOptions): CommandResult {
+  const paths = resolvePaths(env);
+  if (!existsSync(paths.database)) {
+    return failure('No store to group.', 'Run `careerforge init` and `careerforge collect` first.');
+  }
+
+  const config: GroupingConfig = {
+    ...DEFAULT_GROUPING_CONFIG,
+    ...(options.idleGap === undefined ? {} : { idleGapMinutes: options.idleGap }),
+    threshold: {
+      ...DEFAULT_GROUPING_CONFIG.threshold,
+      ...(options.minActiveMinutes === undefined
+        ? {}
+        : { minActiveMinutes: options.minActiveMinutes }),
+    },
+  };
+
+  return withStore(paths, ({ db }) => {
+    const units = new WorkUnitStore(db, nodePlatform);
+    const report = units.group({ config, dryRun: options.dryRun });
+
+    const lines = [
+      options.dryRun ? 'Dry run — nothing was written.' : `Grouped with ${report.strategy}.`,
+      '',
+      `  ${report.proposed} candidate(s), ${report.admitted} substantial enough to keep`,
+      `  ${report.created} new, ${report.updated} regrouped, ${report.unchanged} unchanged`,
+    ];
+    if (report.pinnedSkipped > 0) {
+      lines.push(`  ${report.pinnedSkipped} left alone because you edited them`);
+    }
+    if (report.evidenceBelowThreshold > 0) {
+      lines.push(
+        `  ${report.evidenceBelowThreshold} record(s) below the threshold, kept but not grouped`,
+      );
+    }
+
+    if (options.dryRun) {
+      lines.push('', 'Would keep:');
+      for (const candidate of report.units.filter((unit) => unit.admitted).slice(0, 20)) {
+        lines.push(
+          `  ${candidate.occurredAt.slice(0, 10)}  ${candidate.members.length.toString().padStart(3)} artifact(s)  ${candidate.title}`,
+        );
+      }
+    }
+
+    lines.push('', `Store now holds ${units.count()} work unit(s). Try \`careerforge units\`.`, '');
+    return ok(lines.join('\n'));
+  });
+}
+
+export interface UnitsOptions {
+  readonly project?: string;
+  readonly limit: number;
+}
+
+export function units(env: NodeJS.ProcessEnv, options: UnitsOptions): CommandResult {
+  const paths = resolvePaths(env);
+  if (!existsSync(paths.database)) {
+    return failure('No store to read.', 'Run `careerforge init` first.');
+  }
+
+  return withStore(paths, ({ db }) => {
+    const store = new WorkUnitStore(db, nodePlatform);
+    const found = store.currentUnits(options.project).slice(0, options.limit);
+
+    if (found.length === 0) {
+      return ok('No work units yet. Run `careerforge group` after collecting.\n');
+    }
+
+    const lines: string[] = [];
+    for (const unit of found) {
+      const span =
+        unit.occurredEnd === null || unit.occurredEnd.slice(0, 10) === unit.occurredAt.slice(0, 10)
+          ? unit.occurredAt.slice(0, 10)
+          : `${unit.occurredAt.slice(0, 10)} → ${unit.occurredEnd.slice(0, 10)}`;
+      lines.push(
+        `${unit.pinned ? '*' : ' '} ${span.padEnd(23)} ${store.memberIds(unit.id).length.toString().padStart(3)} artifact(s)  ${unit.title}`,
+      );
+      lines.push(
+        `    ${unit.id}  ${unit.projectKey ?? '(no project)'}${unit.stream === null ? '' : ` · ${unit.stream}`} · ${unit.sensitivity}`,
+      );
+    }
+
+    return ok(
+      `${lines.join('\n')}\n\n${found.length} work unit(s).${
+        found.some((unit) => unit.pinned) ? ' * = edited by you, never regrouped.' : ''
+      }\n`,
+    );
+  });
 }

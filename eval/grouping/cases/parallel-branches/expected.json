@@ -1,0 +1,8 @@
+{
+  "rationale": "Two named branches in the same project on the same afternoon. Different branches are different pieces of work even when they overlap in time — that is what a branch is for.",
+  "units": [
+    ["ev-pb-a1", "ev-pb-a2"],
+    ["ev-pb-b1", "ev-pb-b2"]
+  ],
+  "excluded": []
+}

@@ -197,39 +197,49 @@ describe('work units', () => {
 
   describe('substance threshold', () => {
     const threshold = {
-      minDurationMinutes: 5,
-      minDistinctArtifacts: 3,
+      minActiveMinutes: 15,
+      minDistinctArtifacts: 8,
       commitQualifiesAlone: true,
     };
 
-    it('admits work that ran long enough', () => {
+    it('admits work somebody actually spent time on', () => {
       expect(
-        meetsThreshold({ durationMinutes: 40, distinctArtifacts: 1, hasCommit: false }, threshold),
+        meetsThreshold({ activeMinutes: 40, distinctArtifacts: 1, hasCommit: false }, threshold),
       ).toBe(true);
     });
 
     it('admits work that touched enough artifacts', () => {
       expect(
-        meetsThreshold({ durationMinutes: 1, distinctArtifacts: 9, hasCommit: false }, threshold),
+        meetsThreshold({ activeMinutes: 1, distinctArtifacts: 9, hasCommit: false }, threshold),
       ).toBe(true);
     });
 
     it('admits a commit however brief — a merged change is completed work', () => {
       expect(
-        meetsThreshold({ durationMinutes: 0.2, distinctArtifacts: 0, hasCommit: true }, threshold),
+        meetsThreshold({ activeMinutes: 0.2, distinctArtifacts: 0, hasCommit: true }, threshold),
       ).toBe(true);
     });
 
     it('excludes the sub-minute fragments that are 90% of session files', () => {
       expect(
-        meetsThreshold({ durationMinutes: 0.4, distinctArtifacts: 0, hasCommit: false }, threshold),
+        meetsThreshold({ activeMinutes: 0.4, distinctArtifacts: 0, hasCommit: false }, threshold),
+      ).toBe(false);
+    });
+
+    it('measures time spent, not time elapsed', () => {
+      // Five twenty-second fragments scattered across a working day. Elapsed
+      // time says ten hours; the person was there for under two minutes. The
+      // evaluation corpus admitted all five as an accomplishment until the
+      // signal changed. See eval/grouping/cases/fragment-noise-floor.
+      expect(
+        meetsThreshold({ activeMinutes: 1.7, distinctArtifacts: 5, hasCommit: false }, threshold),
       ).toBe(false);
     });
 
     it('honours a configuration where commits do not qualify alone', () => {
       expect(
         meetsThreshold(
-          { durationMinutes: 0.2, distinctArtifacts: 0, hasCommit: true },
+          { activeMinutes: 0.2, distinctArtifacts: 0, hasCommit: true },
           { ...threshold, commitQualifiesAlone: false },
         ),
       ).toBe(false);

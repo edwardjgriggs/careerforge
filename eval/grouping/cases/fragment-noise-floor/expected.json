@@ -1,0 +1,5 @@
+{
+  "rationale": "Five sub-minute sessions across a day: aborted starts, one-shot questions, a resume that went nowhere. Over 90% of real session files look like this. None of it is an accomplishment, and grouping them by proximity does not make it one.",
+  "units": [],
+  "excluded": ["ev-f1", "ev-f2", "ev-f3", "ev-f4", "ev-f5"]
+}

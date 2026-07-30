@@ -1,0 +1,52 @@
+[
+  {
+    "id": "ev-f1",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-18T08:02:00.000Z",
+    "occurredEnd": "2026-05-18T08:02:20.000Z",
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "what does the retry flag do"
+  },
+  {
+    "id": "ev-f2",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-18T10:40:00.000Z",
+    "occurredEnd": "2026-05-18T10:40:15.000Z",
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "ls the migrations folder"
+  },
+  {
+    "id": "ev-f3",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-18T12:05:00.000Z",
+    "occurredEnd": "2026-05-18T12:05:30.000Z",
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "nevermind"
+  },
+  {
+    "id": "ev-f4",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-18T15:20:00.000Z",
+    "occurredEnd": "2026-05-18T15:20:10.000Z",
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "what version of node is this"
+  },
+  {
+    "id": "ev-f5",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-18T17:45:00.000Z",
+    "occurredEnd": "2026-05-18T17:45:25.000Z",
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "show me the package.json"
+  }
+]

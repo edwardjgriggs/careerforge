@@ -37,3 +37,5 @@ An accepted ADR is never edited except to change status or fix errors. Disagreem
 | [0015](0015-identity-and-content-are-separate-tables.md) | Identity and content live in separate tables | Accepted |
 | [0016](0016-format-drift-is-reported-not-just-tolerated.md) | Format drift is reported, not just tolerated | Accepted |
 | [0017](0017-source-authored-is-not-human-authored.md) | Source-authored is not human-authored | Accepted |
+| [0018](0018-curation-is-protected-by-evidence.md) | Curation is protected by evidence, not by grouping key | Accepted |
+| [0019](0019-grouping-quality-is-measured.md) | Grouping quality is measured against a labelled corpus | Accepted |

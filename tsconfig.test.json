@@ -20,6 +20,7 @@
   "include": [
     "packages/**/*.test.ts",
     "collectors/**/*.test.ts",
+    "eval/**/*.ts",
     "test/**/*.ts",
     "vitest.config.ts"
   ]

@@ -235,3 +235,65 @@ describe('reindex', () => {
     expect(result.stdout).toContain('Reindexed 3');
   });
 });
+
+describe('group and units', () => {
+  beforeEach(async () => {
+    await run(['init'], env);
+    seed(6, 'Session');
+  });
+
+  it('refuses to group a store that does not exist', async () => {
+    const empty = { CAREERFORGE_HOME: join(home, 'nowhere') };
+    const result = await run(['group'], empty);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('careerforge init');
+  });
+
+  it('groups evidence into units', async () => {
+    const result = await run(['group'], env);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain('context-temporal@1');
+    expect(result.stdout).toMatch(/work unit\(s\)/);
+  });
+
+  it('writes nothing on a dry run', async () => {
+    const dry = await run(['group', '--dry-run'], env);
+    expect(dry.stdout).toContain('nothing was written');
+    expect((await run(['units'], env)).stdout).toContain('No work units yet');
+  });
+
+  it('is safe to run twice', async () => {
+    await run(['group'], env);
+    const before = (await run(['units'], env)).stdout;
+    const second = await run(['group'], env);
+    expect(second.exitCode).toBe(0);
+    expect((await run(['units'], env)).stdout).toBe(before);
+  });
+
+  it('lists units, and says so plainly when there are none', async () => {
+    expect((await run(['units'], env)).stdout).toContain('No work units yet');
+    await run(['group'], env);
+    const listed = (await run(['units'], env)).stdout;
+    expect(listed).toContain('artifact(s)');
+    expect(listed).toContain('work unit(s)');
+  });
+
+  it('filters by project', async () => {
+    await run(['group'], env);
+    expect((await run(['units', '--project', 'careerforge'], env)).stdout).toContain('artifact(s)');
+    expect((await run(['units', '--project', 'nothing-here'], env)).stdout).toContain(
+      'No work units yet',
+    );
+  });
+
+  it('accepts threshold overrides, because thresholds are configuration', async () => {
+    // The seeded evidence is commits, and a commit is completed work however
+    // brief — so raising the time threshold must not discard any of it. That
+    // the flag is honoured is visible in the run; that commits survive it is
+    // the rule worth asserting.
+    const strict = await run(['group', '--dry-run', '--min-active', '100000'], env);
+    expect(strict.exitCode).toBe(0);
+    expect(strict.stdout).not.toContain('0 substantial enough to keep');
+    expect(strict.stdout).toContain('nothing was written');
+  });
+});

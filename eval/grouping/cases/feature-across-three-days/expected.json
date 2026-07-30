@@ -1,0 +1,14 @@
+{
+  "rationale": "One feature branch worked over three consecutive days. A person would call this \"I built the tiered pricing engine\" — a single accomplishment — not three days of separate work. Overnight gaps are sleep, not a boundary.",
+  "units": [
+    [
+      "ev-d1-session",
+      "ev-d1-commit",
+      "ev-d2-session",
+      "ev-d2-commit",
+      "ev-d3-session",
+      "ev-d3-commit"
+    ]
+  ],
+  "excluded": []
+}

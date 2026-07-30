@@ -37,6 +37,8 @@ export { EvidenceStore, type EmitResult } from './evidence-store.js';
 
 export { CursorStore } from './cursors.js';
 
+export { WorkUnitStore, type GroupOptions, type GroupingReport } from './work-unit-store.js';
+
 export { BlobStore, hashToRef, isBlobRef, refToHash, type BlobRef } from './blobs.js';
 
 export {

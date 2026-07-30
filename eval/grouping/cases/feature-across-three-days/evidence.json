@@ -1,0 +1,62 @@
+[
+  {
+    "id": "ev-d1-session",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-04T09:00:00.000Z",
+    "occurredEnd": "2026-05-04T11:30:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "feat/pricing",
+    "title": "Build the tiered pricing engine described in the pricing RFC."
+  },
+  {
+    "id": "ev-d1-commit",
+    "kind": "git.commit",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-05-04T11:35:00.000Z",
+    "occurredEnd": null,
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "Add tier resolution"
+  },
+  {
+    "id": "ev-d2-session",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-05T09:15:00.000Z",
+    "occurredEnd": "2026-05-05T12:00:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "feat/pricing",
+    "title": "Continue the pricing engine: volume discounts."
+  },
+  {
+    "id": "ev-d2-commit",
+    "kind": "git.commit",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-05-05T12:05:00.000Z",
+    "occurredEnd": null,
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "Add volume discount bands"
+  },
+  {
+    "id": "ev-d3-session",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-06T08:50:00.000Z",
+    "occurredEnd": "2026-05-06T10:00:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "feat/pricing",
+    "title": "Write the pricing engine test matrix."
+  },
+  {
+    "id": "ev-d3-commit",
+    "kind": "git.commit",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-05-06T10:05:00.000Z",
+    "occurredEnd": null,
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "Cover pricing edge cases"
+  }
+]

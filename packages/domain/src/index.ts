@@ -131,6 +131,16 @@ export {
   type WorkUnitMember,
 } from './work-unit.js';
 
+// ── Grouping: artifacts into units of work ────────────────────────────────
+export {
+  groupContextTemporal,
+  CONTEXT_TEMPORAL_V1,
+  DEFAULT_GROUPING_CONFIG,
+  type GroupCandidate,
+  type GroupableEvidence,
+  type GroupingConfig,
+} from './grouping.js';
+
 // ── Claims: the unit of accountability ────────────────────────────────────
 export {
   evaluateSupport,

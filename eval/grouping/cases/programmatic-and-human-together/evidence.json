@@ -1,0 +1,32 @@
+[
+  {
+    "id": "ev-ph-1",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-07-06T09:00:00.000Z",
+    "occurredEnd": "2026-07-06T10:15:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "chore/dep-upgrade",
+    "title": "Upgrade the database driver and check every call site for breaking changes."
+  },
+  {
+    "id": "ev-ph-2",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-07-06T10:30:00.000Z",
+    "occurredEnd": "2026-07-06T11:05:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "chore/dep-upgrade",
+    "title": "Programmatic session in acme-api"
+  },
+  {
+    "id": "ev-ph-3",
+    "kind": "git.commit",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-07-06T11:10:00.000Z",
+    "occurredEnd": null,
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "Upgrade pg driver to 9.2"
+  }
+]

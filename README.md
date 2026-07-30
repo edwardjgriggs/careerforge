@@ -11,20 +11,21 @@ it, and the record already exists.
 
 ---
 
-> ### Status: pre-alpha — M5 of 13
+> ### Status: pre-alpha — M6 of 13
 >
-> **Collection works, from two sources.** CareerForge turns your Git history _and_ your AI coding
-> sessions into evidence you can search, browse by month, and export. Run it twice and nothing
-> changes.
+> **Collection and grouping work.** CareerForge turns your Git history _and_ your AI coding
+> sessions into evidence, then groups that evidence into units of work you would recognise as
+> accomplishments. Run any of it twice and nothing changes.
 >
 > Git records what changed. A session records what problem you were solving, what you tried, and
-> why — the part you forget first, and the part a STAR story needs.
+> why — the part you forget first, and the part a STAR story needs. A work unit is the two of them
+> together, at the size a person actually describes work.
 >
 > **There is no AI yet, and no career assets** — no resume bullets, no STAR stories, no Evidence
 > Explorer. Those are M9 through M11.
 >
-> Working today: `collect` · `init` · `doctor` · `search` · `timeline` · `export` · `rebuild` ·
-> `reindex`
+> Working today: `collect` · `group` · `units` · `init` · `doctor` · `search` · `timeline` ·
+> `export` · `rebuild` · `reindex`
 >
 > This section will always tell you the truth about what works. See
 > [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for what lands when.
@@ -87,6 +88,7 @@ The database is reconstructible from a plain JSON export you can read, diff, and
 
 ```bash
 careerforge collect              # git history + AI coding sessions
+careerforge group                # artifacts -> units of work
 careerforge enrich               # optional; needs a key
 careerforge generate resume-bullet
 careerforge ui                   # Evidence Explorer in your browser

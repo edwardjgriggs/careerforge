@@ -1,0 +1,5 @@
+{
+  "rationale": "A single commit with no session around it. It took a minute and touched one file, so it clears no duration or artifact threshold — but a merged change is completed work, and dropping it would silently lose a whole category of evidence for anyone who does not use an AI tool.",
+  "units": [["ev-lc-1"]],
+  "excluded": []
+}

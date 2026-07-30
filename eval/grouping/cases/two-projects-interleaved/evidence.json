@@ -1,0 +1,62 @@
+[
+  {
+    "id": "ev-api-1",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-11T09:00:00.000Z",
+    "occurredEnd": "2026-05-11T10:00:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "main",
+    "title": "Fix the webhook retry storm in the payments service."
+  },
+  {
+    "id": "ev-site-1",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-11T10:15:00.000Z",
+    "occurredEnd": "2026-05-11T11:00:00.000Z",
+    "projectKey": "marketing-site",
+    "stream": "main",
+    "title": "Rework the pricing page layout for mobile."
+  },
+  {
+    "id": "ev-api-2",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-11T11:15:00.000Z",
+    "occurredEnd": "2026-05-11T12:30:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "main",
+    "title": "Add idempotency keys to the webhook sender."
+  },
+  {
+    "id": "ev-site-2",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-11T13:00:00.000Z",
+    "occurredEnd": "2026-05-11T14:00:00.000Z",
+    "projectKey": "marketing-site",
+    "stream": "main",
+    "title": "Fix the pricing page contrast failures."
+  },
+  {
+    "id": "ev-api-3",
+    "kind": "git.commit",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-05-11T14:30:00.000Z",
+    "occurredEnd": null,
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "Make webhook delivery idempotent"
+  },
+  {
+    "id": "ev-site-3",
+    "kind": "git.commit",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-05-11T14:40:00.000Z",
+    "occurredEnd": null,
+    "projectKey": "marketing-site",
+    "stream": null,
+    "title": "Responsive pricing table"
+  }
+]

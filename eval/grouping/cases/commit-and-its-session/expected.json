@@ -1,0 +1,5 @@
+{
+  "rationale": "The session proves the reasoning and the commit proves the outcome. They are one piece of work. The Git collector records no branch on purpose — a commit belongs to every branch containing it — so a null stream must not keep them apart.",
+  "units": [["ev-cs-session", "ev-cs-commit"]],
+  "excluded": []
+}

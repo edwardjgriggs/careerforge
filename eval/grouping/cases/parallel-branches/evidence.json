@@ -1,0 +1,42 @@
+[
+  {
+    "id": "ev-pb-a1",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-26T09:00:00.000Z",
+    "occurredEnd": "2026-05-26T10:30:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "feat/audit-log",
+    "title": "Add an append-only audit log for admin actions."
+  },
+  {
+    "id": "ev-pb-b1",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-26T10:45:00.000Z",
+    "occurredEnd": "2026-05-26T11:50:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "fix/session-timeout",
+    "title": "Sessions are timing out an hour early. Find the clock bug."
+  },
+  {
+    "id": "ev-pb-a2",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-26T13:00:00.000Z",
+    "occurredEnd": "2026-05-26T14:10:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "feat/audit-log",
+    "title": "Finish the audit log viewer and its filters."
+  },
+  {
+    "id": "ev-pb-b2",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-26T14:30:00.000Z",
+    "occurredEnd": "2026-05-26T15:15:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "fix/session-timeout",
+    "title": "Confirm the timeout fix against the staging clock."
+  }
+]

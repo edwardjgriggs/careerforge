@@ -1,0 +1,42 @@
+[
+  {
+    "id": "ev-t-d1",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-04-13T09:00:00.000Z",
+    "occurredEnd": "2026-04-13T09:50:00.000Z",
+    "projectKey": "ops-tooling",
+    "stream": "main",
+    "title": "Add request logging to the ingest service."
+  },
+  {
+    "id": "ev-t-d4",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-04-16T10:00:00.000Z",
+    "occurredEnd": "2026-04-16T10:55:00.000Z",
+    "projectKey": "ops-tooling",
+    "stream": "main",
+    "title": "Rewrite the alert thresholds after the noisy weekend."
+  },
+  {
+    "id": "ev-t-d8",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-04-20T14:00:00.000Z",
+    "occurredEnd": "2026-04-20T15:10:00.000Z",
+    "projectKey": "ops-tooling",
+    "stream": "HEAD",
+    "title": "Investigate the queue backlog on the detached checkout."
+  },
+  {
+    "id": "ev-t-d12",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-04-24T09:30:00.000Z",
+    "occurredEnd": "2026-04-24T10:20:00.000Z",
+    "projectKey": "ops-tooling",
+    "stream": "main",
+    "title": "Document the ingest runbook."
+  }
+]

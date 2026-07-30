@@ -1,0 +1,22 @@
+[
+  {
+    "id": "ev-cs-session",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-05-20T13:00:00.000Z",
+    "occurredEnd": "2026-05-20T14:20:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "fix/csv-encoding",
+    "title": "The CSV export mangles non-ASCII customer names. Work out why and fix it."
+  },
+  {
+    "id": "ev-cs-commit",
+    "kind": "git.commit",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-05-20T14:25:00.000Z",
+    "occurredEnd": null,
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "Write CSV exports as UTF-8 with a BOM"
+  }
+]

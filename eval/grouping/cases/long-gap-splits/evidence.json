@@ -1,0 +1,42 @@
+[
+  {
+    "id": "ev-lg-1",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-06-01T09:00:00.000Z",
+    "occurredEnd": "2026-06-01T11:00:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "feat/reporting",
+    "title": "Start the reporting warehouse migration."
+  },
+  {
+    "id": "ev-lg-2",
+    "kind": "git.commit",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-06-01T11:10:00.000Z",
+    "occurredEnd": null,
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "Warehouse schema, first pass"
+  },
+  {
+    "id": "ev-lg-3",
+    "kind": "session.fragment",
+    "sensitivity": "restricted",
+    "occurredAt": "2026-06-22T09:00:00.000Z",
+    "occurredEnd": "2026-06-22T12:00:00.000Z",
+    "projectKey": "acme-api",
+    "stream": "feat/reporting",
+    "title": "Pick the reporting migration back up and finish the backfill."
+  },
+  {
+    "id": "ev-lg-4",
+    "kind": "git.commit",
+    "sensitivity": "confidential",
+    "occurredAt": "2026-06-22T12:15:00.000Z",
+    "occurredEnd": null,
+    "projectKey": "acme-api",
+    "stream": null,
+    "title": "Backfill historical reporting rows"
+  }
+]

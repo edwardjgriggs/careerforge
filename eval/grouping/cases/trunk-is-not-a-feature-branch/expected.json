@@ -1,0 +1,5 @@
+{
+  "rationale": "Four unrelated tasks over twelve days, all on the default branch. A feature branch is somebody stating that this work belongs together; a trunk is where work lands when nobody said anything, and a detached HEAD is not even a name. Measured against a real store, treating them as a shared stream chained 839 artifacts spanning a month into one unit. Absent a real branch these are four separate pieces of work.",
+  "units": [["ev-t-d1"], ["ev-t-d4"], ["ev-t-d8"], ["ev-t-d12"]],
+  "excluded": []
+}

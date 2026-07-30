@@ -183,6 +183,8 @@ describe('trigger coverage', () => {
       'evidence_content',
       'identities',
       'tombstones',
+      'work_unit_members',
+      'work_units',
     ]);
   });
 });

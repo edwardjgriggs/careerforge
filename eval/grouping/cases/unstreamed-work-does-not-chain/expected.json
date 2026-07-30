@@ -1,0 +1,9 @@
+{
+  "rationale": "Three days of work in one project with no branch to tie it together. Nothing but proximity connects these, and proximity is transitive: a tolerance wide enough to bridge one night will bridge every night, and a month of steady work collapses into a single unit containing hundreds of artifacts. Absent a stronger signal, a day is the honest boundary.",
+  "units": [
+    ["ev-c-d1a", "ev-c-d1b"],
+    ["ev-c-d2a", "ev-c-d2b"],
+    ["ev-c-d3a", "ev-c-d3b"]
+  ],
+  "excluded": []
+}

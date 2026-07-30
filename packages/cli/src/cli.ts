@@ -1,6 +1,7 @@
 import {
   COLLECTOR_NAMES,
   collect,
+  group,
   exportCommand,
   init,
   isCollectorName,
@@ -8,6 +9,7 @@ import {
   reindex,
   search,
   timeline,
+  units,
   type CommandResult,
 } from './commands.js';
 import { formatChecks, runChecks } from './doctor.js';
@@ -114,6 +116,31 @@ const COMMANDS: Record<string, CommandSpec> = {
         ...(flag(args, 'from') === undefined ? {} : { from: flag(args, 'from')! }),
         ...(flag(args, 'to') === undefined ? {} : { to: flag(args, 'to')! }),
         limit: numericFlag(args, 'limit', 500),
+      }),
+  },
+  group: {
+    summary: 'Turn collected evidence into units of work',
+    usage: 'careerforge group [--dry-run] [--idle-gap <minutes>] [--min-active <minutes>]',
+    example: 'careerforge group --dry-run',
+    run: (args, env) =>
+      group(env, {
+        dryRun: args.includes('--dry-run'),
+        ...(flag(args, 'idle-gap') === undefined
+          ? {}
+          : { idleGap: numericFlag(args, 'idle-gap', 1200) }),
+        ...(flag(args, 'min-active') === undefined
+          ? {}
+          : { minActiveMinutes: numericFlag(args, 'min-active', 15) }),
+      }),
+  },
+  units: {
+    summary: 'Show your work units',
+    usage: 'careerforge units [--project <key>] [--limit <n>]',
+    example: 'careerforge units --project careerforge',
+    run: (args, env) =>
+      units(env, {
+        ...(flag(args, 'project') === undefined ? {} : { project: flag(args, 'project')! }),
+        limit: numericFlag(args, 'limit', 100),
       }),
   },
   reindex: {
