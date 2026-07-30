@@ -427,6 +427,7 @@ describe('provenance', () => {
     id: 'pe-1' as ProvenanceEdgeId,
     fromKind: 'evidence',
     fromId: 'ev-1',
+    corroborating: false,
     toKind: 'claim',
     toId: 'cl-1',
     relation: 'supports',

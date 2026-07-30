@@ -11,7 +11,7 @@ it, and the record already exists.
 
 ---
 
-> ### Status: pre-alpha — M6 of 13
+> ### Status: pre-alpha — M7 of 13
 >
 > **Collection and grouping work.** CareerForge turns your Git history _and_ your AI coding
 > sessions into evidence, then groups that evidence into units of work you would recognise as
@@ -21,11 +21,16 @@ it, and the record already exists.
 > why — the part you forget first, and the part a STAR story needs. A work unit is the two of them
 > together, at the size a person actually describes work.
 >
-> **There is no AI yet, and no career assets** — no resume bullets, no STAR stories, no Evidence
-> Explorer. Those are M9 through M11.
+> **Claims now carry proof.** `careerforge explain` answers "why is this true?" with a navigable
+> account that separates what happened from what a model made of it — and refuses to record a
+> claim nothing supports. `careerforge interview` asks the questions it will not guess at, with
+> no API key and no network.
 >
-> Working today: `collect` · `group` · `units` · `init` · `doctor` · `search` · `timeline` ·
-> `export` · `rebuild` · `reindex`
+> **There is no AI yet** — no enrichment provider, no generated résumé bullets, no Evidence
+> Explorer UI. Those are M9 through M11.
+>
+> Working today: `collect` · `group` · `units` · `explain` · `interview` · `init` · `doctor` ·
+> `search` · `timeline` · `export` · `rebuild` · `reindex`
 >
 > This section will always tell you the truth about what works. See
 > [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for what lands when.

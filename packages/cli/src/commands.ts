@@ -3,8 +3,10 @@ import { existsSync } from 'node:fs';
 import {
   toInstant,
   DEFAULT_GROUPING_CONFIG,
+  type ExplanationNode,
   type GroupingConfig,
   type Instant,
+  type ProvenanceClass,
 } from '@careerforge/domain';
 import { formatReport, runCollection, type SourceRef } from '@careerforge/collect';
 import { GitCollector } from '@careerforge/collector-git';
@@ -13,6 +15,8 @@ import {
   closeDatabase,
   CursorStore,
   EvidenceStore,
+  InterviewEngine,
+  ProvenanceStore,
   WorkUnitStore,
   exportStore,
   nodePlatform,
@@ -430,5 +434,160 @@ export function units(env: NodeJS.ProcessEnv, options: UnitsOptions): CommandRes
         found.some((unit) => unit.pinned) ? ' * = edited by you, never regrouped.' : ''
       }\n`,
     );
+  });
+}
+
+// ── Explanation and interview ─────────────────────────────────────────────
+
+const CLASS_MARK: Record<ProvenanceClass, string> = {
+  observed: 'observed  ',
+  derived: 'derived   ',
+  stated: 'you said  ',
+  grouped: 'grouped   ',
+  interpreted: 'AI reading',
+};
+
+function renderNodes(nodes: readonly ExplanationNode[], indent: string): string[] {
+  const lines: string[] = [];
+  for (const node of nodes) {
+    const mark = CLASS_MARK[node.provenanceClass];
+    const label = node.label.length > 84 ? `${node.label.slice(0, 84)}…` : node.label;
+    lines.push(`${indent}[${mark}] ${label}`);
+    if (node.detail !== null) lines.push(`${indent}             ${node.detail}`);
+    if (node.repeated) lines.push(`${indent}             (shown above)`);
+    lines.push(...renderNodes(node.children, `${indent}  `));
+  }
+  return lines;
+}
+
+/**
+ * Why is this claim true?
+ *
+ * The output is the product's central promise made inspectable: what stands
+ * behind the sentence, what merely worded it, and what is still missing.
+ */
+export function explain(env: NodeJS.ProcessEnv, claimId: string): CommandResult {
+  const paths = resolvePaths(env);
+  if (!existsSync(paths.database)) {
+    return failure('No store to explain from.', 'Run `careerforge init` first.');
+  }
+
+  return withStore(paths, ({ db }) => {
+    const proof = new ProvenanceStore(db, nodePlatform).explain(claimId);
+    if (proof === null) {
+      return failure(`No claim ${claimId}.`, 'Run `careerforge units` to see what is on record.');
+    }
+
+    const lines = [`"${proof.text}"`, `  a ${proof.claimType} claim`, ''];
+
+    lines.push(
+      proof.verdict.supported
+        ? 'SUPPORTED — this is what stands behind it:'
+        : `NOT SUPPORTED — ${proof.verdict.reason}`,
+      '',
+    );
+
+    if (proof.grounds.length > 0) {
+      lines.push(...renderNodes(proof.grounds, '  '), '');
+    } else {
+      lines.push('  Nothing in the evidence stands behind this.', '');
+    }
+
+    if (proof.interpretation.length > 0) {
+      // Below the grounds and labelled, never mixed in with them. An AI
+      // reading explains the wording; it is not a reason to believe it.
+      lines.push(
+        'Interpretation — this shaped the wording, and is not evidence:',
+        ...renderNodes(proof.interpretation, '  '),
+        '',
+      );
+    }
+
+    if (proof.openGaps.length > 0) {
+      lines.push('Open questions about this work:');
+      for (const gap of proof.openGaps) lines.push(`  ${gap.id}  ${gap.question}`);
+      lines.push('', 'Answer them with `careerforge interview`.', '');
+    }
+
+    if (proof.truncated) {
+      lines.push('(The proof continues beyond the display depth.)', '');
+    }
+
+    return ok(lines.join('\n'));
+  });
+}
+
+export interface InterviewOptions {
+  readonly workUnitId?: string;
+  readonly gapId?: string;
+  readonly answer?: string;
+  readonly decline: boolean;
+  readonly limit: number;
+}
+
+/**
+ * Answer the questions CareerForge will not guess.
+ *
+ * Works with no API key, no network, and no provider configured. Gaps are
+ * raised by rule from a failed support predicate, never by a model.
+ */
+export function interview(env: NodeJS.ProcessEnv, options: InterviewOptions): CommandResult {
+  const paths = resolvePaths(env);
+  if (!existsSync(paths.database)) {
+    return failure('No store to interview against.', 'Run `careerforge init` first.');
+  }
+
+  return withStore(paths, ({ db, store }) => {
+    const provenance = new ProvenanceStore(db, nodePlatform);
+    const engine = new InterviewEngine(db, store, provenance, nodePlatform);
+
+    if (options.gapId !== undefined) {
+      try {
+        if (options.decline) {
+          engine.decline(options.gapId);
+          return ok('Noted. That question will not be asked again.\n');
+        }
+        if (options.answer === undefined || options.answer.trim() === '') {
+          return failure('An answer needs text.', 'Pass --answer "..." or --decline.');
+        }
+        const result = engine.answer(options.gapId, options.answer);
+        return ok(
+          [
+            result.superseded
+              ? 'Updated your earlier answer.'
+              : 'Recorded. This is now evidence you confirmed.',
+            '',
+            `  evidence ${result.evidenceId}`,
+            '',
+            'It can support claims about this work from now on, including the ones',
+            'CareerForge refuses to make without you — like whether you led it.',
+            '',
+          ].join('\n'),
+        );
+      } catch (error) {
+        return failure(error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    const pending = engine.pending(options.workUnitId).slice(0, options.limit);
+    if (pending.length === 0) {
+      return ok(
+        'No open questions. CareerForge asks only when a stronger claim would need something it cannot observe.\n',
+      );
+    }
+
+    const lines = [`${pending.length} open question(s):`, ''];
+    for (const gap of pending) {
+      lines.push(`  ${gap.id}`, `    ${gap.question}`, `    why: ${gap.rationale}`, '');
+    }
+    lines.push(
+      'Answer one:',
+      '  careerforge interview --gap <id> --answer "..."',
+      '  careerforge interview --gap <id> --decline',
+      '',
+      'Answers are stored as evidence you confirmed, and are reused by every future asset.',
+      '',
+    );
+    return ok(lines.join('\n'));
   });
 }

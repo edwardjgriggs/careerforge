@@ -178,10 +178,16 @@ describe('trigger coverage', () => {
     // moment to ask whether it belongs inside the append-only model — which
     // is exactly the question `collector_cursors` had to answer in M4.
     expect(domainTables().sort()).toEqual([
+      'assets',
+      'claims',
       'collector_cursors',
+      'enrichment_runs',
+      'enrichments',
       'evidence',
       'evidence_content',
+      'gaps',
       'identities',
+      'provenance_edges',
       'tombstones',
       'work_unit_members',
       'work_units',

@@ -48,6 +48,17 @@ export interface ProvenanceEdge {
   readonly toId: string;
   readonly relation: ProvenanceRelation;
   readonly weight: number | null;
+  /**
+   * Whether this evidence carries the claim's asserted value, not merely the
+   * fact that the work happened.
+   *
+   * A scope claim — "50+ users" — needs evidence containing that number.
+   * Whoever creates the edge is the only party that can know: matching depends
+   * on the collector's attribute schema, which the domain deliberately does
+   * not interpret. Recorded here so the answer travels with the edge rather
+   * than being guessed at explanation time.
+   */
+  readonly corroborating: boolean;
   readonly recordedAt: Instant;
 }
 
@@ -85,6 +96,15 @@ export function isWellFormed(edge: ProvenanceEdge): boolean {
   if (edge.relation === 'supports' && edge.toKind !== 'claim') return false;
   if (edge.relation === 'answers' && edge.toKind !== 'gap') return false;
   if (edge.relation === 'grouped_into' && edge.toKind !== 'work_unit') return false;
+
+  // An enrichment may accompany a claim and explain it. It may never be the
+  // reason to believe it, so it cannot reach a claim along the one relation
+  // that carries belief. The claim predicate already rejects support that is
+  // only interpretation; this stops the graph from expressing it at all, so a
+  // proof cannot render a model's reading beside a commit as though the two
+  // were the same kind of thing (ADR-0020).
+  if (edge.relation === 'supports' && edge.fromKind === 'enrichment') return false;
+
   return true;
 }
 

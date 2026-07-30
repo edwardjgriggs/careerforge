@@ -39,6 +39,22 @@ export { CursorStore } from './cursors.js';
 
 export { WorkUnitStore, type GroupOptions, type GroupingReport } from './work-unit-store.js';
 
+export {
+  ProvenanceStore,
+  MalformedEdgeError,
+  UnsupportedClaimError,
+  type ClaimDraft,
+  type RecordedClaim,
+  type SupportOffer,
+} from './provenance-store.js';
+
+export {
+  InterviewEngine,
+  INTERVIEW_COLLECTOR_ID,
+  QUESTION_TEMPLATES,
+  type AnswerResult,
+} from './interview.js';
+
 export { BlobStore, hashToRef, isBlobRef, refToHash, type BlobRef } from './blobs.js';
 
 export {

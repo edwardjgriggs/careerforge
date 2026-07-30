@@ -8,17 +8,22 @@ import {
   evaluateSupport,
   isExportable,
   isSupportingRelation,
+  isWellFormed,
   maxSensitivity,
   suppressedIds,
+  toInstant,
   type SupportNode,
 } from '@careerforge/domain';
-import type { EnrichmentId, EvidenceId } from '@careerforge/domain';
+import type { EnrichmentId, EvidenceId, ProvenanceEdgeId } from '@careerforge/domain';
 import {
   canonicalJson,
   closeDatabase,
+  deterministicPlatform,
   EXPORT_FORMAT_VERSION,
   IN_MEMORY,
   openDatabase,
+  ProvenanceStore,
+  UnsupportedClaimError,
 } from '@careerforge/store';
 import { COMMAND_NAMES } from '@careerforge/cli';
 import { describeConformance } from '@careerforge/collect';
@@ -191,7 +196,52 @@ describe('I4 — every claim resolves to at least one provenance edge', () => {
     expect(isSupportingRelation('interprets')).toBe(false);
   });
 
-  it.todo('M10: generation refuses to persist a claim with zero supports edges');
+  it('refuses to persist a claim the predicate rejects', () => {
+    // The predicate is the rule; this is the rule reaching the write path.
+    // A claim row without support that satisfies its type would be a sentence
+    // on somebody's résumé that nothing in their history backs up, so the
+    // store refuses rather than warning. The full negative matrix lives in
+    // packages/store/src/provenance.test.ts.
+    const { db } = openDatabase({ path: IN_MEMORY });
+    try {
+      const store = new ProvenanceStore(db, deterministicPlatform());
+      db.prepare(
+        `INSERT INTO assets (id, asset_type, work_unit_id, content, review_state, recorded_at)
+         VALUES ('a1','resume_bullet',NULL,'x','draft','2026-05-04T09:00:00.000Z')`,
+      ).run();
+
+      expect(() =>
+        store.recordClaim({ assetId: 'a1', text: 'Led it', span: [0, 6], claimType: 'role' }, []),
+      ).toThrow(UnsupportedClaimError);
+      expect((db.prepare('SELECT COUNT(*) n FROM claims').get() as { n: number }).n).toBe(0);
+    } finally {
+      closeDatabase(db);
+    }
+  });
+
+  it('will not let the graph express an enrichment as support', () => {
+    // Two guards for the distinction the product rests on: the predicate
+    // rejects interpretation-only support, and the graph cannot record the
+    // edge at all (ADR-0020).
+    const { db } = openDatabase({ path: IN_MEMORY });
+    try {
+      expect(
+        isWellFormed({
+          id: 'pe-1' as ProvenanceEdgeId,
+          fromKind: 'enrichment',
+          fromId: 'en-1',
+          toKind: 'claim',
+          toId: 'cl-1',
+          relation: 'supports',
+          weight: null,
+          corroborating: false,
+          recordedAt: toInstant('2026-05-04T09:00:00.000Z'),
+        }),
+      ).toBe(false);
+    } finally {
+      closeDatabase(db);
+    }
+  });
 });
 
 describe('I5 — the database is reconstructible from the export', () => {

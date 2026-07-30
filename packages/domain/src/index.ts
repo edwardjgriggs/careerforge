@@ -141,6 +141,22 @@ export {
   type GroupingConfig,
 } from './grouping.js';
 
+// ── Explanation: why a claim is true ──────────────────────────────────────
+export {
+  classify,
+  explainClaim,
+  flatten,
+  isGrounding,
+  PROVENANCE_CLASSES,
+  type ExplainOptions,
+  type Explanation,
+  type ExplanationGap,
+  type ExplanationNode,
+  type NodeDescription,
+  type ProvenanceClass,
+  type ProvenanceLookup,
+} from './explanation.js';
+
 // ── Claims: the unit of accountability ────────────────────────────────────
 export {
   evaluateSupport,

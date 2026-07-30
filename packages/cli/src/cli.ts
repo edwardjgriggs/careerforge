@@ -1,7 +1,9 @@
 import {
   COLLECTOR_NAMES,
   collect,
+  explain,
   group,
+  interview,
   exportCommand,
   init,
   isCollectorName,
@@ -141,6 +143,29 @@ const COMMANDS: Record<string, CommandSpec> = {
       units(env, {
         ...(flag(args, 'project') === undefined ? {} : { project: flag(args, 'project')! }),
         limit: numericFlag(args, 'limit', 100),
+      }),
+  },
+  explain: {
+    summary: 'Show why a claim is true, and what merely worded it',
+    usage: 'careerforge explain <claim-id>',
+    example: 'careerforge explain 01JEXAMPLE',
+    run: (args, env) => {
+      const claimId = args.find((arg) => !arg.startsWith('--'));
+      if (claimId === undefined) return usageError('explain needs a claim id.');
+      return explain(env, claimId);
+    },
+  },
+  interview: {
+    summary: 'Answer the questions CareerForge will not guess',
+    usage: 'careerforge interview [--unit <id>] [--gap <id> --answer <text> | --decline]',
+    example: 'careerforge interview --gap 01JEXAMPLE --answer "I led it"',
+    run: (args, env) =>
+      interview(env, {
+        ...(flag(args, 'unit') === undefined ? {} : { workUnitId: flag(args, 'unit')! }),
+        ...(flag(args, 'gap') === undefined ? {} : { gapId: flag(args, 'gap')! }),
+        ...(flag(args, 'answer') === undefined ? {} : { answer: flag(args, 'answer')! }),
+        decline: args.includes('--decline'),
+        limit: numericFlag(args, 'limit', 20),
       }),
   },
   reindex: {

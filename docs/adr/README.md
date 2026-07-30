@@ -39,3 +39,5 @@ An accepted ADR is never edited except to change status or fix errors. Disagreem
 | [0017](0017-source-authored-is-not-human-authored.md) | Source-authored is not human-authored | Accepted |
 | [0018](0018-curation-is-protected-by-evidence.md) | Curation is protected by evidence, not by grouping key | Accepted |
 | [0019](0019-grouping-quality-is-measured.md) | Grouping quality is measured against a labelled corpus | Accepted |
+| [0020](0020-explanation-separates-grounds-from-interpretation.md) | An explanation separates grounds from interpretation | Accepted |
+| [0021](0021-the-interview-is-not-a-collector.md) | The person is a source; the interview is not a collector | Accepted |

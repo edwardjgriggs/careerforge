@@ -5,7 +5,15 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { toInstant } from '@careerforge/domain';
-import { closeDatabase, EvidenceStore, nodePlatform, openDatabase } from '@careerforge/store';
+import {
+  closeDatabase,
+  EvidenceStore,
+  ProvenanceStore,
+  QUESTION_TEMPLATES,
+  WorkUnitStore,
+  nodePlatform,
+  openDatabase,
+} from '@careerforge/store';
 
 import { COMMAND_NAMES, run } from './cli.js';
 import { resolvePaths } from './paths.js';
@@ -295,5 +303,156 @@ describe('group and units', () => {
     expect(strict.exitCode).toBe(0);
     expect(strict.stdout).not.toContain('0 substantial enough to keep');
     expect(strict.stdout).toContain('nothing was written');
+  });
+});
+
+describe('explain and interview', () => {
+  /** Seeds a store with a work unit, a claim, an interpretation, and a gap. */
+  function seedProof(): { claimId: string; gapId: string; unitId: string } {
+    const { db } = openDatabase({ path: resolvePaths(env).database });
+    try {
+      const store = new EvidenceStore(db, nodePlatform);
+      const unitStore = new WorkUnitStore(db, nodePlatform);
+      const provenance = new ProvenanceStore(db, nodePlatform);
+
+      for (const n of [0, 1]) {
+        store.emit({
+          collectorId: 'git',
+          sourceUri: `git://repo/commit/proof-${n}`,
+          kind: 'git.commit',
+          evidenceClass: 'imported',
+          sensitivity: 'confidential',
+          occurredAt: toInstant(`2026-05-04T${String(9 + n).padStart(2, '0')}:00:00.000Z`),
+          occurredEnd: null,
+          context: { projectKey: 'acme', workspace: null, stream: null },
+          title: `Commit ${n}`,
+          summary: null,
+          excerpt: null,
+          payloadRef: null,
+          attributes: {},
+          groupingHint: null,
+          collectorVersion: '1.0.0',
+          sourceFormatVersion: null,
+        });
+      }
+      unitStore.group();
+      const unitId = unitStore.currentUnits()[0]!.id;
+
+      db.prepare(
+        `INSERT INTO assets (id, asset_type, work_unit_id, content, review_state, recorded_at)
+         VALUES ('a1','resume_bullet',?, 'Built the exporter.','draft','2026-05-04T09:00:00.000Z')`,
+      ).run(unitId);
+      const claim = provenance.recordClaim(
+        { assetId: 'a1', text: 'Built the exporter.', span: [0, 19], claimType: 'action' },
+        [{ kind: 'work_unit', id: unitId }],
+      );
+
+      db.prepare(
+        `INSERT INTO enrichment_runs (id, provider_id, model, params_hash, prompt_template, prompt_hash, input_ids, input_hash, started_at)
+         VALUES ('r1','openai','gpt-5','p','bullet@1','h','[]','ih','2026-05-04T09:00:00.000Z')`,
+      ).run();
+      db.prepare(
+        `INSERT INTO enrichments (id, run_id, target_kind, target_id, enrichment_type, value, confidence, recorded_at)
+         VALUES ('e1','r1','work_unit',?, 'impact','{}',0.8,'2026-05-04T09:00:00.000Z')`,
+      ).run(unitId);
+      provenance.attachInterpretation(claim.id, 'e1');
+
+      const gapId = provenance.raiseGap({
+        workUnitId: unitId,
+        gapType: 'role',
+        ...QUESTION_TEMPLATES['role']!('the exporter'),
+      })!;
+
+      return { claimId: claim.id, gapId, unitId };
+    } finally {
+      closeDatabase(db);
+    }
+  }
+
+  beforeEach(async () => {
+    await run(['init'], env);
+  });
+
+  it('refuses to explain without a claim id', async () => {
+    const result = await run(['explain'], env);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('needs a claim id');
+  });
+
+  it('says plainly when a claim does not exist', async () => {
+    const result = await run(['explain', 'nope'], env);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('No claim');
+  });
+
+  it('shows grounds and interpretation in separate sections', async () => {
+    const { claimId } = seedProof();
+    const output = (await run(['explain', claimId], env)).stdout;
+
+    expect(output).toContain('SUPPORTED');
+    expect(output).toContain('[grouped   ]');
+    expect(output).toContain('[observed  ]');
+
+    // The AI reading appears, labelled, and below the grounds. A reader must
+    // never have to work out which lines are evidence.
+    const groundsAt = output.indexOf('[observed  ]');
+    const interpretationAt = output.indexOf('Interpretation —');
+    expect(interpretationAt).toBeGreaterThan(groundsAt);
+    expect(output.slice(0, interpretationAt)).not.toContain('[AI reading]');
+    expect(output).toContain('is not evidence');
+  });
+
+  it('offers the open questions about that work', async () => {
+    const { claimId, gapId } = seedProof();
+    const output = (await run(['explain', claimId], env)).stdout;
+    expect(output).toContain('Open questions');
+    expect(output).toContain(gapId);
+  });
+
+  it('lists pending questions with the reason for asking', async () => {
+    seedProof();
+    const output = (await run(['interview'], env)).stdout;
+    expect(output).toContain('open question(s)');
+    expect(output).toContain('What was your role');
+    expect(output).toContain('why:');
+  });
+
+  it('says so plainly when there is nothing to ask', async () => {
+    expect((await run(['interview'], env)).stdout).toContain('No open questions');
+  });
+
+  it('records an answer as evidence and closes the question', async () => {
+    const { gapId } = seedProof();
+    const answered = await run(['interview', '--gap', gapId, '--answer', 'I led it.'], env);
+    expect(answered.exitCode).toBe(0);
+    expect(answered.stdout).toContain('evidence you confirmed');
+
+    expect((await run(['interview'], env)).stdout).toContain('No open questions');
+  });
+
+  it('never asks a declined question again', async () => {
+    const { gapId } = seedProof();
+    expect((await run(['interview', '--gap', gapId, '--decline'], env)).stdout).toContain(
+      'not be asked again',
+    );
+    expect((await run(['interview'], env)).stdout).toContain('No open questions');
+  });
+
+  it('refuses an empty answer rather than recording one', async () => {
+    const { gapId } = seedProof();
+    const result = await run(['interview', '--gap', gapId, '--answer', '   '], env);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('needs text');
+  });
+
+  it('works with no API key and no network', async () => {
+    // The interview is the path that must work for someone who never enables
+    // AI at all. Questions come from templates and rules, never a provider.
+    const { gapId } = seedProof();
+    const bare = { CAREERFORGE_HOME: home };
+    expect((await run(['interview'], bare)).stdout).toContain('What was your role');
+    expect((await run(['interview', '--gap', gapId, '--answer', 'I led it.'], bare)).exitCode).toBe(
+      0,
+    );
   });
 });

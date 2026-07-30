@@ -367,13 +367,13 @@ The graph that makes Evidence Explorer possible and makes unsupported claims imp
 - `careerforge explain <claim-id>`.
 
 ### Acceptance criteria
-- [ ] A claim with zero `supports` edges **cannot be persisted** — hard failure, not a warning.
-- [ ] A `role` claim supported only by `imported` evidence is rejected.
-- [ ] A `metric` claim supported only by an enrichment is rejected.
-- [ ] `careerforge explain <claim>` returns the full support set with class labels in bounded time.
-- [ ] Answering a gap creates `user_confirmed` evidence reusable by other units.
-- [ ] A `declined` gap is never re-raised for the same unit.
-- [ ] An answered question is never asked again.
+- [x] A claim with zero `supports` edges **cannot be persisted** — hard failure, not a warning.
+- [x] A `role` claim supported only by `imported` evidence is rejected.
+- [x] A `metric` claim supported only by an enrichment is rejected — and the graph cannot express the edge at all (ADR-0020).
+- [x] `careerforge explain <claim>` returns the full support set with class labels in bounded time.
+- [x] Answering a gap creates `user_confirmed` evidence reusable by other units.
+- [x] A `declined` gap is never re-raised for the same unit.
+- [x] An answered question is never asked again.
 
 ### Tests
 - Negative tests for every rejected claim/support combination.
@@ -384,6 +384,22 @@ The graph that makes Evidence Explorer possible and makes unsupported claims imp
 
 ### Notes
 Depends only on M3, so it can proceed in parallel with the collector track. Interview works without any AI — gaps are emitted by rule, not by model. Worth confirming that independence explicitly here, because it is easy to lose later.
+
+### What implementation found
+
+The milestone was scoped as traversal and turned out to be about **presentation**, which is where the guarantee actually lives.
+
+1. **Traversal alone is not a proof.** A single list of linked records lets a model's reading sit beside a commit looking like the same kind of thing. Explanations now have two sections — `grounds` and `interpretation` — and section membership is decided by what a node *is*, not by which edge reached it. See ADR-0020.
+2. **The graph could express what the predicate forbade.** `evaluateSupport` rejects interpretation-*only* support but permits a mixed set, so an enrichment could have entered `grounds` beside real evidence. `isWellFormed` and a `CHECK` constraint now both refuse a `supports` edge from an enrichment.
+3. **A stored verdict goes stale.** Hiding the only supporting evidence left the claim reading `SUPPORTED`. The verdict is now recomputed from the graph on every explain, and suppressed records are counted as `withheld` rather than silently dropped.
+4. **Membership was invisible to the graph.** Work units held members in `work_unit_members` and nothing linked them, so a proof could not reach source evidence through a unit. `grouped_into` edges are derived by join rather than written twice (ADR-0013).
+
+**The interview is not a `CollectorPort`** (ADR-0021), despite the wording above. Nothing to discover, no cursor, and determinism is exactly wrong for asking a person a question — implementing the interface would have added a vacuous pass to the conformance suite and weakened it for every real collector.
+
+### Carried forward
+
+- Enrichment tables landed here rather than in M9, because testing "an enrichment may explain but never support" needs a real enrichment row. M9 adds the provider, not the schema.
+- `corroborating` is recorded on the support edge, since only the party building the edge can know whether evidence carries a claim's asserted value. M10 is what will set it.
 
 ---
 
