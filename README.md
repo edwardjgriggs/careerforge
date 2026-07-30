@@ -11,7 +11,7 @@ it, and the record already exists.
 
 ---
 
-> ### Status: pre-alpha — M8 of 13
+> ### Status: pre-alpha — M9 of 13
 >
 > **Collection and grouping work.** CareerForge turns your Git history _and_ your AI coding
 > sessions into evidence, then groups that evidence into units of work you would recognise as
@@ -26,16 +26,29 @@ it, and the record already exists.
 > claim nothing supports. `careerforge interview` asks the questions it will not guess at, with
 > no API key and no network.
 >
-> **Nothing can leave without your say-so.** The egress choke point ships before any provider
-> exists, so there is no release in which enrichment could reach the network unenforced.
+> **Nothing can leave without your say-so.** The egress choke point shipped before any provider
+> existed, so there is no release in which enrichment could reach the network unenforced.
 > `careerforge preview` shows the exact bytes that would be sent — and when it refuses, it names
 > the rule and the command that would permit it.
 >
-> **There is no AI yet** — no enrichment provider, no generated résumé bullets, no Evidence
-> Explorer UI. Those are M9 through M11.
+> **AI has arrived, and it is reviewable rather than authoritative.** `careerforge enrich` asks a
+> model to interpret a work unit, and every statement it produces names the records it came
+> from — an interpretation citing something that was never sent is discarded before it reaches
+> your store. Prompts are versioned artifacts frozen by a lockfile, so a run recorded today is
+> still reconstructible in a decade. When an answer changes, `careerforge interpretations` says
+> _why_: the evidence moved, the prompt changed, the provider changed, the model changed, the
+> provider upgraded the model underneath you, or the model simply is not deterministic.
+>
+> Nothing an AI writes supports anything. Interpretations explain records; they never stand
+> behind a claim, and `explain` shows them on the far side of that line.
+>
+> **No enrichment happens without a key, and everything else works without one.**
+>
+> **There are no generated résumé bullets and no Evidence Explorer UI yet.** Those are M10 and M11.
 >
 > Working today: `collect` · `group` · `units` · `explain` · `interview` · `consent` · `preview` ·
-> `init` · `doctor` · `search` · `timeline` · `export` · `rebuild` · `reindex`
+> `enrich` · `interpretations` · `init` · `doctor` · `search` · `timeline` · `export` · `rebuild` ·
+> `reindex`
 >
 > This section will always tell you the truth about what works. See
 > [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for what lands when.

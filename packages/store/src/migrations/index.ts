@@ -6,6 +6,7 @@ import { migration0002 } from './0002-collector-cursors.js';
 import { migration0003 } from './0003-work-units.js';
 import { migration0004 } from './0004-provenance.js';
 import { migration0005 } from './0005-policy.js';
+import { migration0006 } from './0006-enrichment-runs.js';
 import type { Db, Migration } from './types.js';
 
 export type { Db, Migration } from './types.js';
@@ -23,6 +24,7 @@ export const MIGRATIONS: readonly Migration[] = [
   migration0003,
   migration0004,
   migration0005,
+  migration0006,
 ];
 
 for (const [index, migration] of MIGRATIONS.entries()) {

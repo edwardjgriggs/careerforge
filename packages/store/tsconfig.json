@@ -12,6 +12,9 @@
       "path": "../domain"
     },
     {
+      "path": "../enrich"
+    },
+    {
       "path": "../policy"
     }
   ]

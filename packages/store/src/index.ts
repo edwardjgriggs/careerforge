@@ -51,6 +51,13 @@ export {
 export { ConsentStore, type StoredGrant } from './consent-store.js';
 
 export {
+  EnrichmentStore,
+  type RecordRunInput,
+  type StoredEnrichment,
+  type StoredRun,
+} from './enrichment-store.js';
+
+export {
   InterviewEngine,
   INTERVIEW_COLLECTOR_ID,
   QUESTION_TEMPLATES,

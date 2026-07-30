@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -603,5 +603,269 @@ describe('consent and preview', () => {
     const result = await run(['preview', '--unit', 'nope', '--provider', 'openai'], env);
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain('No work unit');
+  });
+});
+
+describe('enrich', () => {
+  /** A work unit with two records, and the ids the payload will carry. */
+  async function seedUnit(sensitivity: 'confidential' | 'restricted' = 'confidential'): Promise<{
+    unitId: string;
+    evidenceIds: string[];
+  }> {
+    await run(['init'], env);
+    const { db } = openDatabase({ path: resolvePaths(env).database });
+    try {
+      const store = new EvidenceStore(db, nodePlatform);
+      const units = new WorkUnitStore(db, nodePlatform);
+      for (const n of [0, 1]) {
+        store.emit({
+          collectorId: 'session',
+          sourceUri: `session://enrich-${n}`,
+          kind: 'session.fragment',
+          evidenceClass: 'imported',
+          sensitivity,
+          occurredAt: toInstant(`2026-05-04T${String(9 + n).padStart(2, '0')}:00:00.000Z`),
+          occurredEnd: toInstant(`2026-05-04T${String(10 + n).padStart(2, '0')}:00:00.000Z`),
+          context: { projectKey: 'acme', workspace: null, stream: 'feat/parser' },
+          title: `Parser work ${n}`,
+          summary: null,
+          excerpt: `Rewrote the reader, pass ${n}`,
+          payloadRef: null,
+          attributes: {},
+          groupingHint: null,
+          collectorVersion: '1.0.0',
+          sourceFormatVersion: null,
+        });
+      }
+      units.group();
+      const unit = units.currentUnits()[0]!;
+      return { unitId: unit.id, evidenceIds: [...units.memberIds(unit.id)] };
+    } finally {
+      closeDatabase(db);
+    }
+  }
+
+  /** A cassette answering the payload the engine will actually build. */
+  function writeCassette(
+    evidenceIds: string[],
+    value: unknown,
+    model = 'gpt-test-2026-02-01',
+  ): string {
+    const payload = evidenceIds
+      .map((id, n) => `[evidence ${id}]\nParser work ${n}\nRewrote the reader, pass ${n}`)
+      .join('\n\n');
+    const path = join(home, 'cassette.json');
+    writeFileSync(
+      path,
+      JSON.stringify({
+        entries: [
+          {
+            name: 'skills',
+            match: { schemaName: 'skills', model: 'gpt-5', payload },
+            response: { value, model, usage: { inputTokens: 100, outputTokens: 40 } },
+          },
+        ],
+      }),
+    );
+    return path;
+  }
+
+  const ANSWER = (ids: string[]) => ({
+    skills: [
+      {
+        name: 'bounded-memory stream parsing',
+        category: 'engineering',
+        rationale: 'rewrote the reader without buffering',
+        evidence: [ids[0]],
+      },
+    ],
+  });
+
+  it('refuses without a key, and says exactly what to set', async () => {
+    const { unitId } = await seedUnit();
+    await run(['consent', 'grant', '--provider', 'openai', '--project', 'acme'], env);
+
+    const result = await run(['enrich', '--unit', unitId], env);
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toContain('provider-configured@1');
+    expect(result.stdout).toContain('OPENAI_API_KEY');
+    // The part that matters: the user is told the rest of the product is
+    // unaffected, rather than being left to assume enrichment is the product.
+    expect(result.stdout).toContain('works without one');
+  });
+
+  it('leaves every other command working with no key configured', async () => {
+    // The acceptance criterion that keeps AI additive (ADR-0005). If a missing
+    // key broke anything else, "AI is optional" would be a slogan.
+    const { unitId } = await seedUnit();
+
+    for (const argv of [
+      ['doctor'],
+      ['units'],
+      ['timeline'],
+      ['search', 'parser'],
+      ['export'],
+      ['consent', 'list'],
+      ['preview', '--unit', unitId, '--provider', 'ollama'],
+      ['interpretations', '--unit', unitId],
+    ]) {
+      const result = await run(argv, env);
+      expect(result.exitCode, `${argv[0]} failed without a key`).toBe(0);
+    }
+  });
+
+  it('refuses before it would need a key when consent is missing', async () => {
+    // Ordering matters. Being told to set a key, setting one, and then being
+    // told about consent would be two refusals for one attempt.
+    const { unitId } = await seedUnit();
+    const result = await run(['enrich', '--unit', unitId], env);
+    expect(result.stdout).toContain('consent-required@1');
+    expect(result.stdout).not.toContain('OPENAI_API_KEY');
+  });
+
+  it('shows the prompt and the payload on a dry run without needing a key', async () => {
+    const { unitId } = await seedUnit();
+    await run(['consent', 'grant', '--provider', 'openai', '--project', 'acme'], env);
+
+    const result = await run(['enrich', '--unit', unitId, '--dry-run'], env);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain('DRY RUN');
+    expect(result.stdout).toContain('skills@1');
+    expect(result.stdout).toContain('Rewrote the reader');
+    expect(result.stdout).toContain('cite');
+  });
+
+  it('rejects an enrichment type with no published prompt', async () => {
+    const { unitId } = await seedUnit();
+    const result = await run(['enrich', '--unit', unitId, '--type', 'leadership'], env);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('no published prompt');
+    expect(result.stderr).toContain('skills');
+  });
+
+  it('records an interpretation and says what produced it', async () => {
+    const { unitId, evidenceIds } = await seedUnit();
+    await run(['consent', 'grant', '--provider', 'openai', '--project', 'acme'], env);
+    const cassette = writeCassette(evidenceIds, ANSWER(evidenceIds));
+
+    const result = await run(['enrich', '--unit', unitId], {
+      ...env,
+      CAREERFORGE_CASSETTE: cassette,
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain('bounded-memory stream parsing');
+    expect(result.stdout).toContain(`cites`);
+    expect(result.stdout).toContain('skills@1');
+    // Asked for one thing, answered by another. Recording only the request
+    // would make the run record subtly untrue.
+    expect(result.stdout).toContain('asked    gpt-5');
+    expect(result.stdout).toContain('answered gpt-test-2026-02-01');
+    expect(result.stdout).toContain('100 in, 40 out');
+  });
+
+  it('says plainly that an interpretation supports nothing', async () => {
+    const { unitId, evidenceIds } = await seedUnit();
+    await run(['consent', 'grant', '--provider', 'openai', '--project', 'acme'], env);
+    const cassette = writeCassette(evidenceIds, ANSWER(evidenceIds));
+
+    const result = await run(['enrich', '--unit', unitId], {
+      ...env,
+      CAREERFORGE_CASSETTE: cassette,
+    });
+    expect(result.stdout).toContain('never stands behind a claim');
+  });
+
+  it('labels a recorded answer as recorded', async () => {
+    // Recorded output that looked like a live answer would be a lie in the
+    // audit trail.
+    const { unitId, evidenceIds } = await seedUnit();
+    await run(['consent', 'grant', '--provider', 'openai', '--project', 'acme'], env);
+    const cassette = writeCassette(evidenceIds, ANSWER(evidenceIds));
+
+    const result = await run(['enrich', '--unit', unitId], {
+      ...env,
+      CAREERFORGE_CASSETTE: cassette,
+    });
+    expect(result.stdout).toContain('RECORDED');
+  });
+
+  it('reports what it discarded for citing something never sent', async () => {
+    const { unitId, evidenceIds } = await seedUnit();
+    await run(['consent', 'grant', '--provider', 'openai', '--project', 'acme'], env);
+    const cassette = writeCassette(evidenceIds, {
+      skills: [
+        ...ANSWER(evidenceIds).skills,
+        {
+          name: 'Kubernetes autoscaling',
+          category: 'operations',
+          rationale: 'seems plausible',
+          evidence: ['01NEVERSENT'],
+        },
+      ],
+    });
+
+    const result = await run(['enrich', '--unit', unitId], {
+      ...env,
+      CAREERFORGE_CASSETTE: cassette,
+    });
+    expect(result.stdout).toContain('Discarded 1 item');
+    expect(result.stdout).toContain('fabricated_citation');
+    expect(result.stdout).toContain('01NEVERSENT');
+    expect(result.stdout).not.toContain('Kubernetes autoscaling\n    category');
+  });
+
+  it('answers a second identical run from the cache, without calling', async () => {
+    const { unitId, evidenceIds } = await seedUnit();
+    await run(['consent', 'grant', '--provider', 'openai', '--project', 'acme'], env);
+    const cassette = writeCassette(evidenceIds, ANSWER(evidenceIds));
+    const withCassette = { ...env, CAREERFORGE_CASSETTE: cassette };
+
+    await run(['enrich', '--unit', unitId], withCassette);
+    // No cassette this time and no key either. A cache hit that needed a
+    // provider would not be a cache hit.
+    const second = await run(['enrich', '--unit', unitId], env);
+
+    expect(second.exitCode).toBe(0);
+    expect(second.stdout).toContain('No call was made and nothing was spent');
+  });
+
+  it('refuses restricted work even for enrichment, and records the attempt', async () => {
+    const { unitId } = await seedUnit('restricted');
+    await run(
+      ['consent', 'grant', '--provider', 'openai', '--project', 'acme', '--level', 'confidential'],
+      env,
+    );
+
+    const result = await run(['enrich', '--unit', unitId], env);
+    expect(result.stdout).toContain('restricted-default@1');
+    expect(result.stdout).toContain('nothing was sent');
+
+    const { db } = openDatabase({ path: resolvePaths(env).database });
+    try {
+      expect(new ConsentStore(db, nodePlatform).decisionCount()).toBeGreaterThan(0);
+    } finally {
+      closeDatabase(db);
+    }
+  });
+});
+
+describe('interpretations', () => {
+  it('says nothing has been interpreted yet, and how to start', async () => {
+    await run(['init'], env);
+    seed(4);
+    await run(['group'], env);
+    const { db } = openDatabase({ path: resolvePaths(env).database });
+    const unitId = new WorkUnitStore(db, nodePlatform).currentUnits()[0]!.id;
+    closeDatabase(db);
+
+    const result = await run(['interpretations', '--unit', unitId], env);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain('Nothing has been interpreted yet');
+    expect(result.stdout).toContain('careerforge enrich --unit');
+  });
+
+  it('needs a unit', async () => {
+    expect((await run(['interpretations'], env)).stderr).toContain('--unit');
   });
 });

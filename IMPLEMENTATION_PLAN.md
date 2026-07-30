@@ -465,38 +465,62 @@ Residual risk — client names in prose, personnel discussion — is **not** sol
 
 ## M9 — OpenAI provider and enrichment
 
-**Complexity: M** · **Depends on: M8**
+**Complexity: M** · **Depends on: M8** · **Status: complete**
 
 ### Goal
 Optional, versioned, reproducible enrichment behind the policy gate.
 
 ### Deliverables
-- `ProviderPort`: rendered prompt + response schema → structured output. No knowledge of Evidence or careers.
-- OpenAI adapter.
-- `enrichment_runs` with `prompt_hash`, `params_hash`, `input_hash`, `model`, `policy_decision_id`, token usage.
-- Enrichment types: `skills`, `technologies`, `star_candidate`.
-- Versioned prompt templates (`skills@1`).
-- `input_hash` caching; staleness flagging when inputs are superseded.
-- `careerforge enrich [--unit <id>] [--type <t>] [--dry-run]`.
+- [x] `ProviderPort`: rendered prompt + response schema → structured output. No knowledge of Evidence or careers.
+- [x] OpenAI adapter.
+- [x] `enrichment_runs` with `prompt_hash`, `params_hash`, `input_hash`, `model`, `policy_decision_id`, token usage.
+- [x] Enrichment types: `skills`, `technologies`, `star_candidate`.
+- [x] Versioned prompt templates (`skills@1`), frozen by a committed lockfile.
+- [x] `input_hash` caching; staleness computed at read time from the evidence.
+- [x] `careerforge enrich [--unit <id>] [--type <t>] [--dry-run]`, plus `careerforge interpretations` as the review surface.
 
 ### Acceptance criteria
-- [ ] Enrichment without a configured key fails with an actionable message — **and every other command still works**.
-- [ ] Every provider call passes through `policy`; bypass is impossible by construction.
-- [ ] Re-running with identical inputs makes **no** API call (cache hit).
-- [ ] Re-running after superseding an input produces a new enrichment; the prior remains queryable.
-- [ ] Enrichment **never** writes to `evidence` — asserted by trigger and by test.
-- [ ] `--dry-run` shows the prompt and the redacted payload without calling.
-- [ ] A run recorded a year ago is fully reconstructible from its stored hashes.
+- [x] Enrichment without a configured key fails with an actionable message — **and every other command still works**.
+- [x] Every provider call passes through `policy`; bypass is impossible by construction.
+- [x] Re-running with identical inputs makes **no** API call (cache hit).
+- [x] Re-running after superseding an input produces a new enrichment; the prior remains queryable.
+- [x] Enrichment **never** writes to `evidence` — asserted by lint, by manifest, and by test.
+- [x] `--dry-run` shows the prompt and the redacted payload without calling.
+- [x] A run recorded a year ago is fully reconstructible from its stored hashes.
 
 ### Tests
-- Recorded-fixture provider: full pipeline tested with **zero network access in CI**.
-- Cache: identical inputs → one call across ten runs.
-- Staleness: supersede an input, assert the dependent enrichment is flagged.
-- Isolation: assert no write to `evidence` from the enrichment path.
-- **Full-suite run with no API key configured** — everything except enrichment must pass.
+- [x] Recorded-fixture provider: full pipeline tested with **zero network access in CI**.
+- [x] Cache: identical inputs → one call across ten runs.
+- [x] Staleness: supersede an input, assert the dependent enrichment is flagged.
+- [x] Isolation: assert no write to `evidence` from the enrichment path.
+- [x] **Full-suite run with no API key configured** — everything except enrichment passes.
 
 ### Notes
 CI must never require an API key. A recorded-fixture provider is the mechanism, and it also gives contributors a way to work on enrichment without spending money — which materially affects who can contribute.
+
+### What implementation found
+
+**The OpenAI adapter belongs in `policy`, not in `enrich`.** The obvious home for an OpenAI client is the package that wants to call OpenAI, and that arrangement has one fatal property: the caller assembles the request body, so the caller decides what goes on the wire and the policy engine becomes something you are expected to remember to consult. Putting the adapter behind the choke point inverts it. A `ProviderCall` carries a `PolicyDecision`, not a payload, and the body is assembled inside `policy` from `decision.payload`. There is no parameter through which unapproved bytes could be sent — bypass is not discouraged, it is unspellable.
+
+**`model` and `resolved_model` had to be separate columns.** What was asked for and what answered are different facts. An alias like `gpt-5` advancing to a newer snapshot is one of the most common real causes of a changed interpretation, and it is completely invisible if only the request is recorded. `explainDifference` reports it as its own dimension, `model_build`, and the first hand-run against a real store produced exactly that output: *"You asked for llama3.1 both times, and the provider answered with llama3.1:8b-instruct-q4 then llama3.1:8b-instruct-q8. The model was upgraded underneath you."*
+
+**Model nondeterminism needed to be a named answer.** When every recorded dimension matches and the output still differs, the cause is the model, and returning an empty difference list while the user looks at two different answers would teach them to stop trusting the record. `model_nondeterminism` says so.
+
+**An enrichment run cannot be inserted as `running` and updated to `completed`** — the tables are append-only. That turned out to be the right shape rather than a limitation to work around: `policy_decisions` records that egress was *permitted*, written before the call; `enrichment_runs` records what *came back*, written after it. A crashed call leaves a decision with no run, which truthfully describes what happened instead of a row claiming a status nobody observed.
+
+**Staleness is computed at read time, not stored.** A flag written at run time is wrong the moment somebody corrects a record, and silently wrong is worse than absent — a résumé built from a stale interpretation reads exactly like one built from a fresh one.
+
+**The first run against a real store found a payload bug.** The session collector derives its title from the first prompt, so the naive `title + excerpt` sent the same sentence twice. It cost tokens on every call and, worse, repetition reads as emphasis to a model: the duplicated sentence would have been weighted above the work it described.
+
+**Two ADRs came out of the milestone.** ADR-0023 makes a prompt a versioned artifact frozen by lockfile — editing a published template fails the build, because every run record naming it claims that text ran. ADR-0024 makes an interpretation cite its inputs or be discarded; the citations are checked against the payload the engine actually built, and an item citing a record that was never sent does not reach the store.
+
+### Carried forward
+
+- Templates exist for `skills`, `technologies`, and `star_candidate` only. `leadership` is deliberately unimplemented — shipping a weak prompt for the claim type most likely to end a career would be worse than shipping none.
+- `star_candidate` carries a `resultBasis` flag distinguishing a result stated in the evidence from one the model inferred. Nothing consumes it yet; M10 must refuse to build a bullet on `not_evidenced`.
+- Review state exists on every enrichment and is written by superseding, but there is no `careerforge review` command yet. The store method is there and tested.
+- `CAREERFORGE_CASSETTE` swaps in the recorded provider. There is no recording mode yet — cassettes are hand-built or captured from a dry run.
+- No live provider call has been made. Every path is verified against recorded fixtures and against a real store; the first real API call will be somebody's, not CI's.
 
 ---
 

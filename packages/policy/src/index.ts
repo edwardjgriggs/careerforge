@@ -32,6 +32,19 @@ export {
 } from './engine.js';
 
 export {
+  assertTransmittable,
+  createOpenAIProvider,
+  ProviderRefusedError,
+  type FetchLike,
+  type OpenAIConfig,
+  type ProviderCall,
+  type ProviderParams,
+  type ProviderPort,
+  type ProviderResponse,
+  type TokenUsage,
+} from './transport.js';
+
+export {
   hasResidualSecrets,
   redact,
   DEFAULT_RULES,

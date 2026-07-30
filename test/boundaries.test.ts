@@ -143,6 +143,43 @@ describe('I3 — only policy may reach the network', () => {
   });
 });
 
+describe('enrichment produces interpretation and never fact', () => {
+  const hasNoWriteRoute = (messages: string[]) =>
+    messages.some((m) => m.includes('never writes fact'));
+
+  it('rejects importing the store from enrich', async () => {
+    // "AI never writes evidence" (ADR-0002) is easy to state and easy to erode
+    // one convenience import at a time. The package that talks to models has
+    // no route to the tables that hold fact.
+    const messages = await lintIn(
+      'enrich',
+      `import { EvidenceStore } from '@careerforge/store';\nexport const x = EvidenceStore;\n`,
+    );
+    expect(hasNoWriteRoute(messages)).toBe(true);
+  });
+
+  it('rejects a database driver import from enrich', async () => {
+    const messages = await lintIn(
+      'enrich',
+      `import Database from 'better-sqlite3';\nexport const x = Database;\n`,
+    );
+    expect(hasNoWriteRoute(messages)).toBe(true);
+  });
+
+  it('declares no dependency on the store', () => {
+    const manifest: unknown = JSON.parse(
+      readFileSync(join(ROOT, 'packages/enrich/package.json'), 'utf8'),
+    );
+    const deps = Object.keys(
+      (manifest as { dependencies?: Record<string, string> }).dependencies ?? {},
+    );
+    expect(deps).not.toContain('@careerforge/store');
+    // The one route out is a ProviderPort that takes a PolicyDecision rather
+    // than a payload, so a call skipping the consent gate is unspellable.
+    expect(deps).toContain('@careerforge/policy');
+  });
+});
+
 describe('protocol stays standalone for plugin authors', () => {
   it('rejects importing a sibling package', async () => {
     const messages = await lintIn(

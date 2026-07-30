@@ -23,6 +23,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "verify": "npm run format:check && npm run lint && npm run build && npm run typecheck:tests && npm run test",
+    "lock:prompts": "node scripts/lock-prompts.mjs",
     "careerforge": "node packages/cli/dist/bin.js"
   },
   "devDependencies": {

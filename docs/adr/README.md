@@ -42,3 +42,5 @@ An accepted ADR is never edited except to change status or fix errors. Disagreem
 | [0020](0020-explanation-separates-grounds-from-interpretation.md) | An explanation separates grounds from interpretation | Accepted |
 | [0021](0021-the-interview-is-not-a-collector.md) | The person is a source; the interview is not a collector | Accepted |
 | [0022](0022-every-refusal-names-its-remedy.md) | Every refusal names the rule and the remedy | Accepted |
+| [0023](0023-a-prompt-is-a-versioned-artifact.md) | A prompt is a versioned artifact, frozen once published | Accepted |
+| [0024](0024-an-interpretation-cites-its-inputs.md) | An interpretation cites its inputs, or it is discarded | Accepted |

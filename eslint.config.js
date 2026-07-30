@@ -137,6 +137,35 @@ export default tseslint.config(
     },
   },
 
+  // ── Enrichment cannot write anything. ───────────────────────────────────
+  // "AI never writes evidence" (ADR-0002) is easy to state and easy to erode
+  // one convenience import at a time. Cutting `enrich` off from the store and
+  // from every database driver makes it structural: the package that talks to
+  // models has no route to the tables that hold fact, so the rule is not
+  // something a contributor has to remember.
+  {
+    files: ['packages/enrich/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [...NETWORK_MODULES, ...AI_SDKS].map((name) => ({
+            name,
+            message:
+              'Invariant I3: only @careerforge/policy may reach the network. Route the call through the Policy Engine. See ADR-0009.',
+          })),
+          patterns: [
+            {
+              group: ['better-sqlite3', 'node:sqlite', 'sqlite3', '@careerforge/store'],
+              message:
+                'Enrichment produces interpretation and never writes fact. @careerforge/enrich has no route to the store by design — hand results back to the caller. See ADR-0002.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // ── Protocol is published for plugin authors in other languages. ────────
   // It must stay dependency-free so consuming it never means consuming the app.
   {
@@ -154,6 +183,16 @@ export default tseslint.config(
           ],
         },
       ],
+    },
+  },
+
+  // Repository tooling runs under Node directly rather than through the
+  // package graph, so it gets Node globals that the packages deliberately do
+  // not have ambient access to.
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly', console: 'readonly' },
     },
   },
 

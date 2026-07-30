@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 import {
   explainRefusal,
@@ -6,6 +6,7 @@ import {
   toInstant,
   DEFAULT_GROUPING_CONFIG,
   SENSITIVITY_LEVELS,
+  type EnrichmentType,
   type ExplanationNode,
   type GroupingConfig,
   type Instant,
@@ -13,7 +14,23 @@ import {
   type Refusal,
   type Sensitivity,
 } from '@careerforge/domain';
-import { evaluate, preview, type PayloadItem, type Provider } from '@careerforge/policy';
+import {
+  createOpenAIProvider,
+  evaluate,
+  preview,
+  type PayloadItem,
+  type Provider,
+  type ProviderPort,
+} from '@careerforge/policy';
+import {
+  canonicalise,
+  createRecordedProvider,
+  executeRun,
+  explainDifference,
+  parseCassette,
+  ENRICHABLE_TYPES,
+  type EnrichmentInput,
+} from '@careerforge/enrich';
 import { formatReport, runCollection, type SourceRef } from '@careerforge/collect';
 import { GitCollector } from '@careerforge/collector-git';
 import { SessionCollector, defaultTranscriptRoot } from '@careerforge/collector-session';
@@ -21,6 +38,7 @@ import {
   closeDatabase,
   ConsentStore,
   CursorStore,
+  EnrichmentStore,
   EvidenceStore,
   InterviewEngine,
   ProvenanceStore,
@@ -719,6 +737,72 @@ export function consent(env: NodeJS.ProcessEnv, options: ConsentOptions): Comman
   });
 }
 
+/**
+ * The evidence behind a work unit, in the shape both egress and enrichment
+ * need.
+ *
+ * One reader for both so that what `preview` shows and what `enrich` sends
+ * cannot drift. A preview that showed something other than what was sent would
+ * be worse than no preview at all.
+ *
+ * `contentHash` travels with each record because it is what makes an
+ * enrichment stale later: the ids can be unchanged while the facts beneath
+ * them have been corrected.
+ */
+function unitInputs(db: Db, units: WorkUnitStore, unitId: string): EnrichmentInput[] {
+  const inputs: EnrichmentInput[] = [];
+  for (const evidenceId of units.memberIds(unitId)) {
+    const row = db
+      .prepare(
+        `SELECT e.sensitivity, e.project_key, e.content_hash,
+                COALESCE(c.title,'') AS title, COALESCE(c.excerpt,'') AS excerpt
+         FROM evidence_current e LEFT JOIN evidence_content c ON c.evidence_id = e.id
+         WHERE e.id = ?`,
+      )
+      .get(evidenceId) as
+      | {
+          sensitivity: string;
+          project_key: string | null;
+          content_hash: string;
+          title: string;
+          excerpt: string;
+        }
+      | undefined;
+    if (row === undefined) continue;
+    inputs.push({
+      id: evidenceId,
+      contentHash: row.content_hash,
+      sensitivity: row.sensitivity as Sensitivity,
+      projectKey: row.project_key,
+      text: recordText(row.title, row.excerpt),
+    });
+  }
+  return inputs;
+}
+
+/**
+ * One record, as text, without saying the same thing twice.
+ *
+ * A session collector derives its title *from* the first prompt, so the naive
+ * `title + excerpt` sends the same sentence twice. Caught on the first run
+ * against a real store. It costs tokens on every call, and worse, repetition
+ * reads as emphasis to a model — the duplicated sentence would be weighted
+ * more heavily than the work it describes.
+ */
+function recordText(title: string, excerpt: string): string {
+  if (excerpt === '') return title;
+  if (title === '' || excerpt.startsWith(title)) return excerpt;
+  return `${title}\n${excerpt}`;
+}
+
+const toPayloadItem = (input: EnrichmentInput): PayloadItem => ({
+  kind: 'evidence',
+  id: input.id,
+  sensitivity: input.sensitivity,
+  projectKey: input.projectKey,
+  text: input.text,
+});
+
 export interface PreviewOptions {
   readonly workUnitId: string;
   readonly providerId: string;
@@ -752,33 +836,8 @@ export function previewEgress(env: NodeJS.ProcessEnv, options: PreviewOptions): 
       );
     }
 
-    const items: PayloadItem[] = [];
-    for (const evidenceId of units.memberIds(unit.id)) {
-      const row = db
-        .prepare(
-          `SELECT e.sensitivity, e.project_key, e.kind,
-                  COALESCE(c.title,'') AS title, COALESCE(c.excerpt,'') AS excerpt
-           FROM evidence_current e LEFT JOIN evidence_content c ON c.evidence_id = e.id
-           WHERE e.id = ?`,
-        )
-        .get(evidenceId) as
-        | {
-            sensitivity: string;
-            project_key: string | null;
-            kind: string;
-            title: string;
-            excerpt: string;
-          }
-        | undefined;
-      if (row === undefined) continue;
-      items.push({
-        kind: 'evidence',
-        id: evidenceId,
-        sensitivity: row.sensitivity as Sensitivity,
-        projectKey: row.project_key,
-        text: row.excerpt === '' ? row.title : `${row.title}\n${row.excerpt}`,
-      });
-    }
+    const inputs = unitInputs(db, units, unit.id);
+    const items: PayloadItem[] = inputs.map(toPayloadItem);
 
     const provider = resolveProvider(options.providerId);
     const request = { provider, purpose: 'preview', items };
@@ -829,6 +888,407 @@ export function previewEgress(env: NodeJS.ProcessEnv, options: PreviewOptions): 
       'Patterns catch keys, tokens, and connection strings. They do not catch a client',
       'name in a sentence or an opinion about a colleague. Read the text above before',
       'you allow anything — that is what this command is for.',
+      '',
+    );
+
+    return ok(lines.join('\n'));
+  });
+}
+
+// ── Enrichment ────────────────────────────────────────────────────────────
+
+/**
+ * Which model each provider is asked for by default.
+ *
+ * The requested name, which is not necessarily what answers. The run record
+ * keeps both, because an alias quietly advancing to a newer snapshot is the
+ * most common real reason last year's interpretation reads differently from
+ * this year's.
+ */
+const DEFAULT_MODELS: Readonly<Record<string, string>> = {
+  openai: 'gpt-5',
+  anthropic: 'claude-sonnet-5',
+  ollama: 'llama3.1',
+};
+
+/**
+ * Which provider actually answers.
+ *
+ * `CAREERFORGE_CASSETTE` points at a recorded conversation and swaps in the
+ * recorded provider. That exists so somebody improving a prompt does not need
+ * to fund an OpenAI account to see whether their change works — requiring a
+ * credential to develop enrichment does not merely inconvenience contributors,
+ * it selects which contributors exist.
+ *
+ * A recorded run is labelled everywhere it appears. Recorded output that looked
+ * like a live answer would be a lie in the audit trail.
+ */
+function resolveProviderPort(env: NodeJS.ProcessEnv): {
+  port: ProviderPort;
+  recorded: boolean;
+} {
+  const cassettePath = env['CAREERFORGE_CASSETTE'];
+  if (cassettePath !== undefined && cassettePath !== '') {
+    const cassette = parseCassette(JSON.parse(readFileSync(cassettePath, 'utf8')));
+    return { port: createRecordedProvider(cassette, { digest: sha256 }), recorded: true };
+  }
+  // Constructed here rather than at module load, so a missing key is a refusal
+  // at the moment of use — with a remedy — and never something that stops the
+  // rest of the CLI from working.
+  return { port: createOpenAIProvider({ apiKey: env['OPENAI_API_KEY'] }), recorded: false };
+}
+
+export interface EnrichOptions {
+  readonly workUnitId: string;
+  readonly enrichmentType?: string;
+  readonly providerId: string;
+  readonly model?: string;
+  readonly dryRun: boolean;
+  readonly force: boolean;
+}
+
+function renderRun(
+  label: string,
+  fingerprint: { templateId: string; promptHash: string; inputHash: string },
+  extra: readonly string[] = [],
+): string[] {
+  return [
+    label,
+    `    prompt   ${fingerprint.templateId} (${fingerprint.promptHash.slice(0, 12)})`,
+    `    evidence ${fingerprint.inputHash.slice(0, 12)}`,
+    ...extra,
+  ];
+}
+
+/**
+ * Interpret a work unit, through the gate and into a reviewable record.
+ *
+ * The command is deliberately unexciting about its own output. It prints what
+ * the model said, and beside it the four things that decide whether to believe
+ * any of it: which prompt version ran, which model actually answered, which
+ * records each statement cites, and what was thrown away for citing something
+ * that was never sent.
+ *
+ * That framing is the product. A tool that prints resume bullets is
+ * commonplace; one where every generated sentence remains attributable,
+ * inspectable, and challengeable is not.
+ */
+export async function enrich(
+  env: NodeJS.ProcessEnv,
+  options: EnrichOptions,
+): Promise<CommandResult> {
+  const paths = resolvePaths(env);
+  if (!existsSync(paths.database)) {
+    return failure('No store yet.', 'Run `careerforge init` first.');
+  }
+
+  const requested = options.enrichmentType ?? 'skills';
+  if (!ENRICHABLE_TYPES.includes(requested as EnrichmentType)) {
+    return failure(
+      `CareerForge has no published prompt for "${requested}".`,
+      `Available: ${ENRICHABLE_TYPES.join(', ')}.`,
+    );
+  }
+  const enrichmentType = requested as EnrichmentType;
+
+  const { db } = openDatabase({ path: paths.database });
+  try {
+    const units = new WorkUnitStore(db, nodePlatform);
+    const consentStore = new ConsentStore(db, nodePlatform);
+    const enrichmentStore = new EnrichmentStore(db, nodePlatform);
+
+    const unit = units.byId(options.workUnitId);
+    if (unit === null) {
+      return failure(
+        `No work unit ${options.workUnitId}.`,
+        'Run `careerforge units` to list them.',
+      );
+    }
+
+    const inputs = unitInputs(db, units, unit.id);
+    if (inputs.length === 0) {
+      return failure(
+        'That work unit has no evidence to interpret.',
+        'Run `careerforge collect` and `careerforge group` first.',
+      );
+    }
+
+    const provider = resolveProvider(options.providerId);
+    const model = options.model ?? DEFAULT_MODELS[provider.id] ?? 'gpt-5';
+    const startedAt = toInstant(new Date().toISOString());
+    const { port, recorded } = resolveProviderPort(env);
+
+    const outcome = await executeRun(
+      { target: { kind: 'work_unit', id: unit.id }, enrichmentType, provider, model, inputs },
+      {
+        consent: (projectKey, providerId) => consentStore.lookup(projectKey, providerId),
+        digest: sha256,
+        provider: port,
+        lookupCached: (fingerprint) => enrichmentStore.findCached(fingerprint),
+        dryRun: options.dryRun,
+        force: options.force,
+      },
+    );
+
+    const header = [
+      `Work unit: ${unit.title}`,
+      `Reading:   ${inputs.length} record(s)`,
+      `Asking:    ${provider.id} (${provider.locality}) for ${enrichmentType}`,
+      ...(recorded ? ['', 'RECORDED — answering from a cassette, not from a live provider.'] : []),
+      '',
+    ];
+
+    switch (outcome.kind) {
+      case 'unsupported':
+        return failure(outcome.refusal.reason, explainRefusal(outcome.refusal).next);
+
+      case 'refused': {
+        // Recorded even though nothing was sent. A trail containing only the
+        // permitted calls answers "what left?" and not "what was attempted?",
+        // and the second is the question asked after a scare.
+        consentStore.recordDecision(outcome.decision);
+        return {
+          stdout: [
+            ...header,
+            'REFUSED — nothing was sent and nothing was recorded.',
+            '',
+            ...renderRefusals(outcome.refusals),
+          ].join('\n'),
+          stderr: '',
+          exitCode: 1,
+        };
+      }
+
+      case 'cached': {
+        const run = enrichmentStore.runById(outcome.cached.runId);
+        return ok(
+          [
+            ...header,
+            'Already interpreted. No call was made and nothing was spent.',
+            '',
+            ...renderRun('  This answer came from an earlier run:', outcome.fingerprint, [
+              `    model    ${run?.resolvedModel ?? outcome.fingerprint.model}`,
+              `    run      ${outcome.cached.runId}`,
+            ]),
+            '',
+            'The evidence, prompt, model, and parameters are all unchanged, so the answer',
+            'would be the same answer. Use --force to ask anyway.',
+            '',
+          ].join('\n'),
+        );
+      }
+
+      case 'dry_run':
+        return ok(
+          [
+            ...header,
+            'DRY RUN — nothing was sent.',
+            '',
+            ...renderRun('  This is what would run:', outcome.fingerprint),
+            '',
+            '  ── Instructions (static, versioned, evidence-free) ──',
+            outcome.instructions.replace(/^/gm, '  '),
+            '',
+            '  ── Payload (your evidence, redacted) ──',
+            outcome.payload.replace(/^/gm, '  '),
+            '',
+          ].join('\n'),
+        );
+
+      case 'completed': {
+        const decisionId =
+          provider.locality === 'remote' ? consentStore.recordDecision(outcome.decision) : null;
+
+        const usable = outcome.validated.items.length > 0;
+        const previousRuns = enrichmentStore.runsFor(unit.id, enrichmentType);
+
+        const runId = enrichmentStore.recordRun({
+          fingerprint: outcome.fingerprint,
+          target: { kind: 'work_unit', id: unit.id },
+          enrichmentType,
+          resolvedModel: outcome.response.model,
+          policyDecisionId: decisionId,
+          redactionProfile: outcome.decision.redaction.profile,
+          // An unusable run is recorded and never cached, so a bad answer does
+          // not become permanent while the fact that it happened still does.
+          status: usable ? 'completed' : 'unusable',
+          usage: outcome.usage,
+          validated: outcome.validated,
+          startedAt,
+        });
+
+        const lines = [
+          ...header,
+          usable
+            ? `${outcome.validated.items.length} interpretation(s), each citing what it read:`
+            : 'Nothing usable came back.',
+          '',
+        ];
+
+        for (const item of outcome.validated.items) {
+          const value = item.value as Record<string, unknown>;
+          const label = String(value['name'] ?? value['situation'] ?? '(unnamed)');
+          lines.push(`  ${label}`);
+          for (const [key, member] of Object.entries(value)) {
+            if (key === 'name' || key === 'situation') continue;
+            lines.push(`    ${key.padEnd(12)} ${String(member)}`);
+          }
+          lines.push(`    ${'cites'.padEnd(12)} ${item.evidence.join(', ')}`, '');
+        }
+
+        if (outcome.validated.rejections.length > 0) {
+          lines.push(
+            `Discarded ${outcome.validated.rejections.length} item(s):`,
+            ...outcome.validated.rejections.map((r) => `  ${r.reason.padEnd(20)} ${r.summary}`),
+            '',
+          );
+        }
+
+        if (outcome.validated.unknownCitations.length > 0) {
+          lines.push(
+            'The model cited records that were never sent to it:',
+            ...outcome.validated.unknownCitations.map((id) => `  ${id}`),
+            '',
+            'Statements resting only on those were discarded. Nothing in your store',
+            'stands behind them.',
+            '',
+          );
+        }
+
+        const previous = previousRuns[0];
+        if (previous !== undefined) {
+          const current = enrichmentStore.runById(runId)!;
+          lines.push(
+            'Different from the last run because:',
+            ...explainDifference(previous, current, true).map(
+              (difference) => `  ${difference.dimension.padEnd(22)} ${difference.explanation}`,
+            ),
+            '',
+          );
+        }
+
+        lines.push(
+          `Recorded as run ${runId}.`,
+          `  prompt   ${outcome.fingerprint.templateId}`,
+          `  asked    ${model}`,
+          `  answered ${outcome.response.model}`,
+          `  cost     ${outcome.usage.inputTokens} in, ${outcome.usage.outputTokens} out`,
+          '',
+          'None of this supports anything yet. An interpretation explains a record; it',
+          'never stands behind a claim, and `careerforge explain` shows it on the',
+          'interpretation side of the line rather than among the grounds.',
+          '',
+        );
+
+        return ok(lines.join('\n'));
+      }
+    }
+  } finally {
+    closeDatabase(db);
+  }
+}
+
+export interface EnrichmentsOptions {
+  readonly workUnitId: string;
+  readonly showRuns: boolean;
+}
+
+/**
+ * What a model has said about a work unit, and whether to believe it.
+ *
+ * The review surface. Every interpretation is shown with the run that produced
+ * it, the records it cites, whether the evidence beneath it has moved, and
+ * whether a person has passed judgement on it yet. Unreviewed is the default
+ * and stays visible: an AI output that quietly becomes authoritative by never
+ * being questioned is the failure this whole design is arranged against.
+ */
+export function enrichments(env: NodeJS.ProcessEnv, options: EnrichmentsOptions): CommandResult {
+  const paths = resolvePaths(env);
+  if (!existsSync(paths.database)) {
+    return failure('No store yet.', 'Run `careerforge init` first.');
+  }
+
+  return withStore(paths, ({ db }) => {
+    const units = new WorkUnitStore(db, nodePlatform);
+    const store = new EnrichmentStore(db, nodePlatform);
+
+    const unit = units.byId(options.workUnitId);
+    if (unit === null) {
+      return failure(
+        `No work unit ${options.workUnitId}.`,
+        'Run `careerforge units` to list them.',
+      );
+    }
+
+    const byId = new Map(
+      unitInputs(db, units, unit.id).map((input) => [input.id, input.contentHash]),
+    );
+    // The same hashing the run used, so staleness compares like with like. A
+    // record that has left the unit hashes as absent, which is a change.
+    const currentHash = (ids: readonly string[]): string =>
+      sha256(canonicalise([...ids].sort().map((id) => [id, byId.get(id) ?? null])));
+
+    const current = store.currentFor(unit.id, currentHash);
+    if (current.length === 0) {
+      return ok(
+        [
+          `Work unit: ${unit.title}`,
+          '',
+          'Nothing has been interpreted yet.',
+          '',
+          `  careerforge enrich --unit ${unit.id} --type skills`,
+          '',
+        ].join('\n'),
+      );
+    }
+
+    const lines = [`Work unit: ${unit.title}`, ''];
+    for (const item of current) {
+      const value = item.value as Record<string, unknown>;
+      const label = String(value['name'] ?? value['situation'] ?? '(unnamed)');
+      lines.push(
+        `  ${item.stale ? 'STALE   ' : '        '}${item.reviewState.padEnd(11)} ${label}`,
+        `            cites  ${item.basis.join(', ')}`,
+        `            run    ${item.runId}`,
+        '',
+      );
+    }
+
+    if (current.some((item) => item.stale)) {
+      lines.push(
+        'STALE means the evidence beneath the interpretation has been corrected or',
+        'superseded since it was made. Re-run to interpret what is true now.',
+        '',
+      );
+    }
+
+    if (options.showRuns) {
+      lines.push('Runs, newest first:', '');
+      const runs = store.runsFor(unit.id);
+      for (const [index, run] of runs.entries()) {
+        lines.push(
+          `  ${run.id}  ${run.enrichmentType}  ${run.status}`,
+          `    prompt   ${run.templateId} (${run.promptHash.slice(0, 12)})`,
+          `    asked    ${run.model}`,
+          `    answered ${run.resolvedModel ?? '(not recorded)'}`,
+          `    evidence ${run.inputHash.slice(0, 12)} over ${run.inputIds.length} record(s)`,
+          `    cost     ${run.inputTokens} in, ${run.outputTokens} out`,
+        );
+        const older = runs[index + 1];
+        if (older !== undefined && older.enrichmentType === run.enrichmentType) {
+          for (const difference of explainDifference(older, run, true)) {
+            lines.push(`    changed  ${difference.explanation}`);
+          }
+        }
+        lines.push('');
+      }
+    }
+
+    lines.push(
+      'Every statement above is an interpretation, not a fact. None of them supports a',
+      'claim, and none will unless you confirm it. Accepting or rejecting one writes a',
+      'new record rather than editing this one, so what the model first said stays',
+      'answerable.',
       '',
     );
 

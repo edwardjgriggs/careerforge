@@ -2,6 +2,8 @@ import {
   COLLECTOR_NAMES,
   collect,
   consent,
+  enrich,
+  enrichments,
   explain,
   group,
   interview,
@@ -203,6 +205,34 @@ const COMMANDS: Record<string, CommandSpec> = {
         providerId: provider,
         full: args.includes('--full'),
       });
+    },
+  },
+  enrich: {
+    summary: 'Ask a model to interpret a work unit (needs a key and consent)',
+    usage:
+      'careerforge enrich --unit <id> [--type skills|technologies|star_candidate] [--provider <id>] [--model <name>] [--dry-run] [--force]',
+    example: 'careerforge enrich --unit 01JEXAMPLE --type skills --dry-run',
+    run: (args, env) => {
+      const unit = flag(args, 'unit');
+      if (unit === undefined) return usageError('enrich needs --unit <id>.');
+      return enrich(env, {
+        workUnitId: unit,
+        ...(flag(args, 'type') === undefined ? {} : { enrichmentType: flag(args, 'type')! }),
+        providerId: flag(args, 'provider') ?? 'openai',
+        ...(flag(args, 'model') === undefined ? {} : { model: flag(args, 'model')! }),
+        dryRun: args.includes('--dry-run'),
+        force: args.includes('--force'),
+      });
+    },
+  },
+  interpretations: {
+    summary: 'Review what a model has said, and what it cited',
+    usage: 'careerforge interpretations --unit <id> [--runs]',
+    example: 'careerforge interpretations --unit 01JEXAMPLE --runs',
+    run: (args, env) => {
+      const unit = flag(args, 'unit');
+      if (unit === undefined) return usageError('interpretations needs --unit <id>.');
+      return enrichments(env, { workUnitId: unit, showRuns: args.includes('--runs') });
     },
   },
   reindex: {

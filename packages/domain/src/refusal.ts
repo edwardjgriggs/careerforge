@@ -66,6 +66,19 @@ export type Remedy =
     }
   | {
       /**
+       * Supply a setting the system cannot supply for itself.
+       *
+       * Distinct from `grant`: consent is a decision, configuration is a
+       * credential. Conflating the two would offer to "allow" something when
+       * the real answer is that CareerForge has no key to call with.
+       */
+      readonly kind: 'configure';
+      /** The environment variable or setting name, exactly as spelled. */
+      readonly setting: string;
+      readonly detail: string;
+    }
+  | {
+      /**
        * Nothing the user can do, and saying so plainly is the honest answer.
        *
        * Rare by design. If this becomes common, the rule producing it is
@@ -112,6 +125,8 @@ export function describeRemedy(remedy: Remedy): string {
       return `Use a provider that runs on this machine. ${remedy.detail}`;
     case 'reduce_payload':
       return `Send less. ${remedy.detail}`;
+    case 'configure':
+      return `Set ${remedy.setting}. ${remedy.detail}`;
     case 'not_possible':
       return remedy.detail;
   }

@@ -17,7 +17,19 @@ import {
   type SupportNode,
 } from '@careerforge/domain';
 import type { EnrichmentId, EvidenceId, ProvenanceEdgeId } from '@careerforge/domain';
-import { evaluate, POLICY_RULES } from '@careerforge/policy';
+import {
+  createOpenAIProvider,
+  evaluate,
+  ProviderRefusedError,
+  POLICY_RULES,
+} from '@careerforge/policy';
+import {
+  explainDifference,
+  templateFor,
+  validateResponse,
+  ENRICHABLE_TYPES,
+  TEMPLATES,
+} from '@careerforge/enrich';
 import {
   canonicalJson,
   closeDatabase,
@@ -388,6 +400,168 @@ describe('I6 — collectors emit records and never write', () => {
     const manifest = new GitCollector().describe();
     const misnamespaced = manifest.kinds.filter((k) => !k.startsWith(`${manifest.id}.`));
     expect(misnamespaced).toEqual([]);
+  });
+});
+
+describe('an AI output is a reviewable artifact, never an authority', () => {
+  it('lets no provider be reached except with a decision', async () => {
+    // The structural claim behind invariant I3. A `ProviderCall` carries a
+    // `PolicyDecision`, not a payload, so there is no parameter through which
+    // a caller could substitute bytes the engine never saw. The refused case
+    // proves the guard runs before anything else.
+    const refused = evaluate(
+      {
+        provider: { id: 'openai', locality: 'remote' },
+        purpose: 'enrich',
+        items: [
+          {
+            kind: 'evidence',
+            id: 'ev-1',
+            sensitivity: 'internal',
+            projectKey: 'acme',
+            text: 'some work',
+          },
+        ],
+      },
+      { consent: () => null },
+    );
+
+    let called = false;
+    const provider = createOpenAIProvider({
+      apiKey: 'sk-test',
+      fetchImpl: async () => {
+        called = true;
+        throw new Error('should never be reached');
+      },
+    });
+
+    await expect(
+      provider({
+        decision: refused,
+        model: 'gpt-test',
+        params: { temperature: 0, maxOutputTokens: 100 },
+        instructions: 'anything',
+        schema: {},
+        schemaName: 'test',
+      }),
+    ).rejects.toBeInstanceOf(ProviderRefusedError);
+    expect(called).toBe(false);
+  });
+
+  it('freezes every published prompt against a committed lockfile', () => {
+    // Editing a published template would make every run record naming it a
+    // lie: the record names text that never ran (ADR-0023).
+    const lock: unknown = JSON.parse(
+      readFileSync(join(ROOT, 'packages/enrich/src/templates.lock.json'), 'utf8'),
+    );
+    expect(Object.keys(lock as object).sort()).toEqual(Object.keys(TEMPLATES).sort());
+  });
+
+  it('publishes a prompt only for types it can do well', () => {
+    // `leadership` is named in the domain and deliberately unimplemented.
+    // Shipping a weak prompt for it would be worse than shipping none: it is
+    // the claim type most likely to end a career.
+    expect(ENRICHABLE_TYPES.length).toBeGreaterThan(0);
+    for (const type of ENRICHABLE_TYPES) expect(templateFor(type)).not.toBeNull();
+    expect(templateFor('leadership')).toBeNull();
+  });
+
+  it('requires every prompt to demand a citation, in the schema and not only in prose', () => {
+    for (const template of Object.values(TEMPLATES)) {
+      const properties = template.schema['properties'] as Record<string, { items?: unknown }>;
+      const item = (Object.values(properties)[0]?.items ?? {}) as { required?: string[] };
+      expect(item.required, `${template.id} does not require a citation`).toContain('evidence');
+    }
+  });
+
+  it('discards an interpretation citing a record that was never sent', () => {
+    const template = templateFor('skills')!;
+    const result = validateResponse(
+      {
+        skills: [
+          { name: 'real', category: 'engineering', rationale: 'r', evidence: ['01SENT'] },
+          { name: 'invented', category: 'engineering', rationale: 'r', evidence: ['01NEVER'] },
+        ],
+      },
+      template,
+      ['01SENT'],
+    );
+    expect(result.items).toHaveLength(1);
+    expect(result.rejections[0]!.reason).toBe('fabricated_citation');
+  });
+
+  it('names the setting when a provider is not configured, and says what still works', async () => {
+    // A missing key must never look like a broken product. AI is additive
+    // (ADR-0005), so the refusal has to say so.
+    const provider = createOpenAIProvider({ apiKey: undefined });
+    const allowed = evaluate(
+      {
+        provider: { id: 'ollama', locality: 'local' },
+        purpose: 'enrich',
+        items: [
+          {
+            kind: 'evidence',
+            id: 'ev-1',
+            sensitivity: 'public',
+            projectKey: null,
+            text: 'some work',
+          },
+        ],
+      },
+      { consent: () => null },
+    );
+
+    try {
+      await provider({
+        decision: allowed,
+        model: 'gpt-test',
+        params: { temperature: 0, maxOutputTokens: 100 },
+        instructions: 'anything',
+        schema: {},
+        schemaName: 'test',
+      });
+      expect.unreachable('should have refused');
+    } catch (error) {
+      const refusal = (error as ProviderRefusedError).refusals[0]!;
+      expect(refusal.rule).toBe('provider-configured@1');
+      expect(isActionable(refusal.remedy)).toBe(true);
+      expect(refusal.remedy).toMatchObject({ kind: 'configure', setting: 'OPENAI_API_KEY' });
+    }
+  });
+
+  it('attributes a changed answer rather than merely reporting one', () => {
+    // The user's question is never "did this change?" — it is "why?".
+    const base = {
+      templateId: 'skills@1',
+      promptHash: 'p1',
+      paramsHash: 'a1',
+      inputHash: 'i1',
+      inputIds: ['01EV1'],
+      providerId: 'openai',
+      model: 'gpt-5',
+      resolvedModel: 'gpt-5-2026-01-01',
+    };
+    expect(explainDifference(base, base, false)).toEqual([]);
+    // Identical on every recorded dimension and a different answer: the model
+    // itself. Reporting "nothing changed" here would teach a user to distrust
+    // the record.
+    expect(explainDifference(base, base, true)[0]!.dimension).toBe('model_nondeterminism');
+    expect(
+      explainDifference(base, { ...base, resolvedModel: 'gpt-5-2026-06-01' }, true)[0]!.dimension,
+    ).toBe('model_build');
+  });
+
+  it('gives enrichment no route to write a fact', () => {
+    // ADR-0002 as a property of the build graph. The package that talks to
+    // models cannot reach the tables that hold fact.
+    const manifest: unknown = JSON.parse(
+      readFileSync(join(ROOT, 'packages/enrich/package.json'), 'utf8'),
+    );
+    const deps = Object.keys(
+      (manifest as { dependencies?: Record<string, string> }).dependencies ?? {},
+    );
+    expect(deps).not.toContain('@careerforge/store');
+    expect(deps).not.toContain('better-sqlite3');
   });
 });
 
