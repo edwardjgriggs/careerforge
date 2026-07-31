@@ -49,3 +49,4 @@ An accepted ADR is never edited except to change status or fix errors. Disagreem
 | [0027](0027-an-outcome-is-observed-never-inferred.md) | An outcome must be observed, never inferred from the work that caused it | Accepted |
 | [0028](0028-listening-is-not-sending.md) | Listening is not sending | Accepted |
 | [0029](0029-positioning-is-an-evidence-engine.md) | CareerForge is positioned as an evidence engine, not an AI platform | Accepted |
+| [0030](0030-better-sqlite3-12-for-prebuilt-binaries.md) | `better-sqlite3` 12.x, because 13.x ships no prebuilt binaries | Accepted |

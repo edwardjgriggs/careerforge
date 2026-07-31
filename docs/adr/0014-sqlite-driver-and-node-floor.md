@@ -1,6 +1,6 @@
 # ADR-0014 — `better-sqlite3` as the driver, Node 22 as the floor
 
-**Status:** Accepted · 2026-07-30
+**Status:** Accepted · 2026-07-30 · driver version superseded by [ADR-0030](0030-better-sqlite3-12-for-prebuilt-binaries.md)
 **Relates to:** ADR-0003 · `Architecture.md` §4, §12
 **Raised by:** M2 implementation
 
