@@ -442,6 +442,8 @@ export function group(env: NodeJS.ProcessEnv, options: GroupCommandOptions): Com
 export interface UnitsOptions {
   readonly project?: string;
   readonly limit: number;
+  /** Emit one JSON object per line on stdout, for scripts. */
+  readonly json: boolean;
 }
 
 export function units(env: NodeJS.ProcessEnv, options: UnitsOptions): CommandResult {
@@ -453,6 +455,26 @@ export function units(env: NodeJS.ProcessEnv, options: UnitsOptions): CommandRes
   return withStore(paths, ({ db }) => {
     const store = new WorkUnitStore(db, nodePlatform);
     const found = store.currentUnits(options.project).slice(0, options.limit);
+
+    if (options.json) {
+      // One object per line (NDJSON), nothing else on stdout, so a pipe or
+      // `jq -c` reads it cleanly. An empty result is an empty stream.
+      const lines = found.map((unit) =>
+        JSON.stringify({
+          id: unit.id,
+          title: unit.title,
+          occurredAt: unit.occurredAt,
+          occurredEnd: unit.occurredEnd,
+          projectKey: unit.projectKey,
+          stream: unit.stream,
+          sensitivity: unit.sensitivity,
+          pinned: unit.pinned,
+          artifactCount: store.memberIds(unit.id).length,
+          groupingStrategy: unit.groupingStrategy,
+        }),
+      );
+      return ok(lines.length === 0 ? '' : `${lines.join('\n')}\n`);
+    }
 
     if (found.length === 0) {
       return ok('No work units yet. Run `careerforge group` after collecting.\n');
@@ -1768,6 +1790,8 @@ export function review(env: NodeJS.ProcessEnv, options: ReviewOptions): CommandR
 export interface AssetsOptions {
   readonly workUnitId?: string;
   readonly markdown: boolean;
+  /** Emit one JSON object per line on stdout, for scripts. */
+  readonly json: boolean;
 }
 
 /**
@@ -1786,6 +1810,29 @@ export function assets(env: NodeJS.ProcessEnv, options: AssetsOptions): CommandR
   return withStore(paths, ({ db }) => {
     const assetStore = new AssetStore(db, nodePlatform);
     const units = new WorkUnitStore(db, nodePlatform);
+
+    if (options.json) {
+      // --json and --markdown are different output contracts (machine vs
+      // human export); the CLI layer refuses both at once.
+      const all =
+        options.workUnitId === undefined
+          ? units.currentUnits().flatMap((unit) => assetStore.forWorkUnit(unit.id))
+          : assetStore.forWorkUnit(options.workUnitId);
+      const lines = all.map((asset) =>
+        JSON.stringify({
+          id: asset.id,
+          assetType: asset.assetType,
+          workUnitId: asset.workUnitId,
+          text: asset.text,
+          reviewState: asset.reviewState,
+          grade: asset.grade,
+          recordedAt: asset.recordedAt,
+          editedBy: asset.editedBy,
+          supersedes: asset.supersedes,
+        }),
+      );
+      return ok(lines.length === 0 ? '' : `${lines.join('\n')}\n`);
+    }
 
     if (options.markdown) {
       const exportable = assetStore.exportable(options.workUnitId);

@@ -157,12 +157,13 @@ const COMMANDS: Record<string, CommandSpec> = {
   },
   units: {
     summary: 'Show your work units',
-    usage: 'careerforge units [--project <key>] [--limit <n>]',
+    usage: 'careerforge units [--project <key>] [--limit <n>] [--json]',
     example: 'careerforge units --project careerforge',
     run: (args, env) =>
       units(env, {
         ...(flag(args, 'project') === undefined ? {} : { project: flag(args, 'project')! }),
         limit: numericFlag(args, 'limit', 100),
+        json: args.includes('--json'),
       }),
   },
   explain: {
@@ -295,13 +296,18 @@ const COMMANDS: Record<string, CommandSpec> = {
   },
   assets: {
     summary: 'List what has been generated, or export what you have approved',
-    usage: 'careerforge assets [--unit <id>] [--markdown]',
+    usage: 'careerforge assets [--unit <id>] [--markdown] [--json]',
     example: 'careerforge assets --markdown',
-    run: (args, env) =>
-      assets(env, {
+    run: (args, env) => {
+      if (args.includes('--json') && args.includes('--markdown')) {
+        return usageError('Pass one of --json or --markdown, not both.');
+      }
+      return assets(env, {
         ...(flag(args, 'unit') === undefined ? {} : { workUnitId: flag(args, 'unit')! }),
         markdown: args.includes('--markdown'),
-      }),
+        json: args.includes('--json'),
+      });
+    },
   },
   tour: {
     summary: 'A guided tour — sample data, real commands, and why it works this way',

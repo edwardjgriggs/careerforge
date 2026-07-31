@@ -305,6 +305,61 @@ describe('group and units', () => {
     expect(strict.stdout).not.toContain('0 substantial enough to keep');
     expect(strict.stdout).toContain('nothing was written');
   });
+
+  it('emits one JSON object per unit with --json, and nothing else on stdout', async () => {
+    // Before grouping there are no units, so --json is an empty stream — the
+    // scriptable equivalent of "no work units yet", not a human sentence.
+    const empty = await run(['units', '--json'], env);
+    expect(empty.exitCode).toBe(0);
+    expect(empty.stdout).toBe('');
+    expect(empty.stderr).toBe('');
+
+    await run(['group'], env);
+    const result = await run(['units', '--json'], env);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe('');
+
+    const lines = result.stdout.split('\n').filter((line) => line.length > 0);
+    expect(lines.length).toBeGreaterThan(0);
+
+    const expectedKeys = [
+      'id',
+      'title',
+      'occurredAt',
+      'occurredEnd',
+      'projectKey',
+      'stream',
+      'sensitivity',
+      'pinned',
+      'artifactCount',
+      'groupingStrategy',
+    ];
+    const parsed = lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+    for (const unit of parsed) {
+      for (const key of expectedKeys) expect(unit[key]).toBeDefined();
+      expect(typeof unit.artifactCount).toBe('number');
+      expect(unit.groupingStrategy).toBe('context-temporal@1');
+    }
+
+    // The JSON stream and the human listing describe the same units.
+    const human = (await run(['units'], env)).stdout;
+    for (const unit of parsed) expect(human).toContain(unit.id as string);
+  });
+
+  it('honours --project and --limit under --json', async () => {
+    await run(['group'], env);
+    const filtered = await run(['units', '--json', '--project', 'careerforge'], env);
+    expect(filtered.exitCode).toBe(0);
+    const lines = filtered.stdout.split('\n').filter((line) => line.length > 0);
+    for (const line of lines) {
+      expect(JSON.parse(line).projectKey).toBe('careerforge');
+    }
+
+    const limited = await run(['units', '--json', '--limit', '1'], env);
+    expect(limited.stdout.split('\n').filter((line) => line.length > 0).length).toBeLessThanOrEqual(
+      1,
+    );
+  });
 });
 
 describe('explain and interview', () => {
@@ -1206,5 +1261,44 @@ describe('the review gate', () => {
   it('refuses two contradictory decisions at once', async () => {
     const result = await run(['review', 'x', '--accept', '--reject'], env);
     expect(result.exitCode).toBe(2);
+  });
+
+  it('emits one JSON object per asset with `assets --json`', async () => {
+    // No assets yet: --json is an empty stream, exit code unchanged.
+    await run(['init'], env);
+    const empty = await run(['assets', '--json'], env);
+    expect(empty.exitCode).toBe(0);
+    expect(empty.stdout).toBe('');
+    expect(empty.stderr).toBe('');
+
+    const assetId = await generated();
+    const result = await run(['assets', '--json'], env);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe('');
+
+    const lines = result.stdout.split('\n').filter((line) => line.length > 0);
+    expect(lines.length).toBeGreaterThan(0);
+    const expectedKeys = [
+      'id',
+      'assetType',
+      'workUnitId',
+      'text',
+      'reviewState',
+      'grade',
+      'recordedAt',
+      'editedBy',
+      'supersedes',
+    ];
+    const parsed = lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+    for (const asset of parsed) {
+      for (const key of expectedKeys) expect(asset[key]).toBeDefined();
+    }
+    expect(parsed.some((asset) => asset.id === assetId)).toBe(true);
+  });
+
+  it('refuses --json together with --markdown', async () => {
+    const result = await run(['assets', '--json', '--markdown'], env);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('one of --json or --markdown');
   });
 });
