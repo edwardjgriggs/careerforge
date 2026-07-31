@@ -30,7 +30,7 @@
     "@careerforge/enrich": "0.2.1",
     "@careerforge/generate": "0.2.1",
     "@careerforge/policy": "0.2.1",
-    "better-sqlite3": "^12.11.1"
+    "better-sqlite3": "^13.0.1"
   },
   "scripts": {
     "build": "tsc --build"
