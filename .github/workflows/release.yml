@@ -52,9 +52,16 @@ jobs:
       # artifacts being unusable: every package resolving from the tarballs
       # rather than from a registry proves the dependency set is complete, and
       # the tour proves the thing a stranger runs first actually runs.
+      #
+      # The `./` is load-bearing. npm treats a bare `dist-release/foo.tgz` as the
+      # GitHub shorthand `owner/repo` and goes looking for it over SSH; only a
+      # path beginning `./`, `../`, or `/` is read as a local tarball. This step
+      # failed on exactly that the first time it ever ran, which is the argument
+      # for the step existing: docs/install.md has always told users `./*.tgz`,
+      # and the release pipeline was the one place getting it wrong.
       - name: Install the artifacts offline and walk the tour
         run: |
-          npm install -g --offline --prefix "$RUNNER_TEMP/pfx" dist-release/*.tgz
+          npm install -g --offline --prefix "$RUNNER_TEMP/pfx" ./dist-release/*.tgz
           "$RUNNER_TEMP/pfx/bin/careerforge" --version
           "$RUNNER_TEMP/pfx/bin/careerforge" tour --no-pause
         env:
