@@ -1,6 +1,6 @@
 {
   "name": "@careerforge/collector-session",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "AI Coding Session collector. Turns AI-assisted work sessions into Evidence. Claude Code is the first adapter.",
   "license": "Apache-2.0",
@@ -26,8 +26,8 @@
     "dist"
   ],
   "dependencies": {
-    "@careerforge/domain": "0.1.0",
-    "@careerforge/collect": "0.1.0"
+    "@careerforge/domain": "0.2.0",
+    "@careerforge/collect": "0.2.0"
   },
   "scripts": {
     "build": "tsc --build"

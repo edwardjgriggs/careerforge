@@ -1,6 +1,6 @@
 {
   "name": "@careerforge/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "CareerForge command-line interface.",
   "license": "Apache-2.0",
@@ -29,15 +29,15 @@
     "dist"
   ],
   "dependencies": {
-    "@careerforge/collect": "0.1.0",
-    "@careerforge/collector-git": "0.1.0",
-    "@careerforge/collector-session": "0.1.0",
-    "@careerforge/domain": "0.1.0",
-    "@careerforge/enrich": "0.1.0",
-    "@careerforge/generate": "0.1.0",
-    "@careerforge/policy": "0.1.0",
-    "@careerforge/store": "0.1.0",
-    "@careerforge/ui": "0.1.0"
+    "@careerforge/collect": "0.2.0",
+    "@careerforge/collector-git": "0.2.0",
+    "@careerforge/collector-session": "0.2.0",
+    "@careerforge/domain": "0.2.0",
+    "@careerforge/enrich": "0.2.0",
+    "@careerforge/generate": "0.2.0",
+    "@careerforge/policy": "0.2.0",
+    "@careerforge/store": "0.2.0",
+    "@careerforge/ui": "0.2.0"
   },
   "scripts": {
     "build": "tsc --build"

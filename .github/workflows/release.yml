@@ -71,7 +71,7 @@ jobs:
           body: |
             Pre-1.0. The plugin protocol (`@careerforge/protocol`) is
             **unstable** and will change without a major version bump until
-            1.0. Everything else follows semver from 0.1.0.
+            1.0. Everything else follows semver from 0.2.0.
 
             Verify your download:
 

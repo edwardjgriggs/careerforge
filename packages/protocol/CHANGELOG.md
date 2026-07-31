@@ -1,0 +1,7 @@
+# @careerforge/protocol
+
+## 0.2.0
+
+### Minor Changes
+
+- 3ca4d73: Initial public release of CareerForge.

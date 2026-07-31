@@ -1,6 +1,6 @@
 {
   "name": "careerforge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "CareerForge - a local-first evidence engine for your work history. Every generated claim cites the evidence behind it, and unsupported claims are refused rather than softened.",
   "license": "Apache-2.0",
@@ -33,6 +33,6 @@
     "careerforge": "./bin.js"
   },
   "dependencies": {
-    "@careerforge/cli": "0.1.0"
+    "@careerforge/cli": "0.2.0"
   }
 }

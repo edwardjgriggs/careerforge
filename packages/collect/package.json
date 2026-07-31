@@ -1,6 +1,6 @@
 {
   "name": "@careerforge/collect",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Collector host, cursors, and the collector conformance suite.",
   "license": "Apache-2.0",
@@ -26,9 +26,9 @@
     "dist"
   ],
   "dependencies": {
-    "@careerforge/domain": "0.1.0",
-    "@careerforge/protocol": "0.1.0",
-    "@careerforge/store": "0.1.0"
+    "@careerforge/domain": "0.2.0",
+    "@careerforge/protocol": "0.2.0",
+    "@careerforge/store": "0.2.0"
   },
   "scripts": {
     "build": "tsc --build"

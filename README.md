@@ -169,7 +169,7 @@ Storage is SQLite, but the durable copy is a plain JSON export you can read, dif
 grep — `careerforge rebuild` reconstructs the database from it. Leaving is always possible,
 which is the only version of data ownership that means anything.
 
-## Status: 0.1.0, and honest about it
+## Status: 0.2.0, and honest about it
 
 **Working today:** collection from Git and AI coding sessions, grouping into units of work,
 generation with every claim checked, the interview, the provenance graph, the egress gate,
@@ -180,7 +180,7 @@ commit.
 seam already in place and needs no schema migration to add.
 
 **`@careerforge/protocol` is unstable** and will change without a major version bump until
-1.0. Everything else follows semver from 0.1.0. At 1.0 the Evidence schema and the plugin
+1.0. Everything else follows semver from 0.2.0. At 1.0 the Evidence schema and the plugin
 protocol freeze — 1.0 is a compatibility promise, not a feature count.
 
 This section will always tell you the truth about what works.

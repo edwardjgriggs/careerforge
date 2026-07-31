@@ -1,6 +1,6 @@
 {
   "name": "@careerforge/ui",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Local web UI (Evidence Explorer).",
   "license": "Apache-2.0",
@@ -26,8 +26,8 @@
     "dist"
   ],
   "dependencies": {
-    "@careerforge/domain": "0.1.0",
-    "@careerforge/store": "0.1.0"
+    "@careerforge/domain": "0.2.0",
+    "@careerforge/store": "0.2.0"
   },
   "scripts": {
     "build": "tsc --build"

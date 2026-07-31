@@ -1,6 +1,6 @@
 {
   "name": "careerforge-monorepo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "CareerForge - a local-first evidence engine for professional work. It collects what you actually did, and refuses to claim anything the evidence cannot support.",

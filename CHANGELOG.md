@@ -3,16 +3,23 @@
 All notable changes to this project are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
-project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) from 0.1.0 —
+project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) from 0.2.0 —
 with one stated exception: **`@careerforge/protocol` is unstable and will change without a
 major version bump until 1.0.**
 
+This file covers the repository. Each published package also carries its own generated
+`CHANGELOG.md`; this one is the account a person would want to read.
+
 ## [Unreleased]
 
-## [0.1.0] — 2026-07-31
+## [0.2.0] — 2026-07-31
 
-First release. Thirteen milestones, and a Proof of Thesis: that career assets can be
-generated from evidence with claim-level provenance, and that the refusals are the point.
+**The first public release.** There is no 0.1.0 on npm or on the releases page — the
+version was carried through thirteen milestones of development and bumped once on the way
+out the door, before anything had been published. Nothing is missing.
+
+Thirteen milestones, and a Proof of Thesis: that career assets can be generated from
+evidence with claim-level provenance, and that the refusals are the point.
 
 ### Added
 
@@ -50,5 +57,5 @@ generated from evidence with claim-level provenance, and that the refusals are t
 - Not built yet: out-of-process plugins, sync, analytics, a desktop shell. Each has a seam
   in place and needs no schema migration to add.
 
-[unreleased]: https://github.com/edwardjgriggs/careerforge/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/edwardjgriggs/careerforge/releases/tag/v0.1.0
+[unreleased]: https://github.com/edwardjgriggs/careerforge/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/edwardjgriggs/careerforge/releases/tag/v0.2.0

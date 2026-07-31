@@ -76,7 +76,7 @@ account, no remote, and nothing left anywhere else on your system.
 
 ## Pre-1.0
 
-`0.1.0` is pre-release software. The store schema is forward-migrated on every
+`0.2.0` is pre-release software. The store schema is forward-migrated on every
 upgrade and your export is the durable copy, so upgrading is safe — but
 **`@careerforge/protocol` is unstable** and will change without a major version
 bump until 1.0. Do not build an out-of-process plugin against it yet expecting

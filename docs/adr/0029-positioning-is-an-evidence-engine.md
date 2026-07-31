@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-07-31
-**Milestone:** 0.1.0 launch
+**Milestone:** 0.2.0 launch
 **Corrects:** Vision.md §1
 
 ## Context
