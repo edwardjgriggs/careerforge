@@ -65,6 +65,14 @@ export type SupportNode =
        * attribute schema, which the domain deliberately does not interpret.
        */
       readonly corroborating?: boolean;
+      /**
+       * True when this record observes a *result* rather than the work.
+       *
+       * A merged release, a closed issue, a resolved incident. Resolved by the
+       * caller for the same reason as `corroborating`: it depends on the
+       * collector's kind vocabulary, which the domain does not interpret.
+       */
+      readonly recordsOutcome?: boolean;
     }
   | { readonly kind: 'work_unit'; readonly id: WorkUnitId }
   | { readonly kind: 'enrichment'; readonly id: EnrichmentId };
@@ -238,18 +246,30 @@ export function evaluateSupport(
           };
 
     case 'outcome':
-      // A specific factual assertion about a result, so it needs evidence.
-      // A work unit is a grouping, not an observation of a result.
-      return evidence.length > 0
+      // Evidence of the *result*, not evidence that the work happened.
+      //
+      // This originally accepted any evidence at all, which sounded right
+      // until something generated an outcome claim: a commit shows the change
+      // and says nothing about whether the alerts stopped. Treating work as
+      // evidence of its own consequence is exactly the inference the product
+      // refuses everywhere else, and it survived a milestone only because no
+      // generator existed to exploit it. See ADR-0027.
+      return evidence.some(
+        (node) =>
+          node.recordsOutcome === true ||
+          node.evidenceClass === 'derived' ||
+          node.evidenceClass === 'user_confirmed',
+      )
         ? { supported: true }
         : {
             supported: false,
             code: 'outcome_requires_evidence',
-            reason: 'No evidence records this outcome.',
+            reason:
+              'The evidence records the work, not what came of it. An outcome has to be observed or confirmed, never inferred from the change that caused it.',
             remedy: {
-              kind: 'evidence',
-              needs: 'imported',
-              detail: 'Collect what shows the result — a merged change, a closed issue, a release.',
+              kind: 'confirm',
+              needs: 'user_confirmed',
+              question: 'What actually changed as a result of this work?',
             },
           };
   }

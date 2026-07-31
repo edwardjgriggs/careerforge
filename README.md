@@ -11,43 +11,53 @@ it, and the record already exists.
 
 ---
 
-> ### Status: pre-alpha — M9 of 13
+> ### Status: pre-alpha — M10 of 13
 >
-> **Collection and grouping work.** CareerForge turns your Git history _and_ your AI coding
-> sessions into evidence, then groups that evidence into units of work you would recognise as
-> accomplishments. Run any of it twice and nothing changes.
+> **It writes résumé bullets now, and refuses most of what a model proposes.**
 >
-> Git records what changed. A session records what problem you were solving, what you tried, and
-> why — the part you forget first, and the part a STAR story needs. A work unit is the two of them
-> together, at the size a person actually describes work.
+> Ask it to write about a piece of work and the model returns typed, cited
+> assertions — never a sentence. Each one is checked against your evidence, and
+> whatever the evidence cannot carry is **removed and turned into a question**,
+> not softened. The bullet is composed afterwards from what survived, so a
+> refused claim's words never appear at all.
 >
-> **Claims now carry proof.** `careerforge explain` answers "why is this true?" with a navigable
-> account that separates what happened from what a model made of it — and refuses to record a
-> claim nothing supports. `careerforge interview` asks the questions it will not guess at, with
-> no API key and no network.
+> Against ten real commits, a model proposing five claims produced this:
 >
-> **Nothing can leave without your say-so.** The egress choke point shipped before any provider
-> existed, so there is no release in which enrichment could reach the network unenforced.
-> `careerforge preview` shows the exact bytes that would be sent — and when it refuses, it names
-> the rule and the command that would permit it.
+> ```
+> Built the CareerForge monorepo with enforced architectural boundaries.
 >
-> **AI has arrived, and it is reviewable rather than authoritative.** `careerforge enrich` asks a
-> model to interpret a work unit, and every statement it produces names the records it came
-> from — an interpretation citing something that was never sent is discarded before it reaches
-> your store. Prompts are versioned artifacts frozen by a lockfile, so a run recorded today is
-> still reconstructible in a decade. When an answer changes, `careerforge interpretations` says
-> _why_: the evidence moved, the prompt changed, the provider changed, the model changed, the
-> provider upgraded the model underneath you, or the model simply is not deterministic.
+> Left out — the evidence does not carry them:
+>   role     "led the architecture decisions across the platform"
+>   scope    "covering 10 commits"
+>   metric   "cutting onboarding time by 50%"
+>   outcome  "eliminating architectural drift"
 >
-> Nothing an AI writes supports anything. Interpretations explain records; they never stand
-> behind a claim, and `explain` shows them on the far side of that line.
+> Evidence: observed — 2 records from 1 source(s)
+>   - Based only on observed activity. Nobody confirmed any part of it.
+>   - No evidence records what changed because of this work.
+> ```
 >
-> **No enrichment happens without a key, and everything else works without one.**
+> Answer the role question and regenerate, and the claim comes back — supported
+> by you, and the grade rises from `observed` to `corroborated`.
 >
-> **There are no generated résumé bullets and no Evidence Explorer UI yet.** Those are M10 and M11.
+> **Every asset carries an assessment of its evidence, not a model's
+> confidence.** How many independent sources, whether you confirmed anything,
+> whether an outcome was ever observed, what had to be left out. A consumer can
+> judge quality without re-reading the store, and it is recomputed on every
+> read — if the evidence moves, it says so.
 >
-> Working today: `collect` · `group` · `units` · `explain` · `interview` · `consent` · `preview` ·
-> `enrich` · `interpretations` · `init` · `doctor` · `search` · `timeline` · `export` · `rebuild` ·
+> **Nothing leaves until you have read it.** The export gate is in the export
+> path, not the UI. A draft cannot be exported; neither can something you
+> rejected.
+>
+> **Collection, grouping, proof, and consent all still work with no API key.**
+> Only generation and enrichment need one.
+>
+> **The Evidence Explorer UI is still to come.** That is M11.
+>
+> Working today: `collect` · `group` · `units` · `generate` · `review` ·
+> `assets` · `explain` · `interview` · `enrich` · `interpretations` · `consent` ·
+> `preview` · `init` · `doctor` · `search` · `timeline` · `export` · `rebuild` ·
 > `reindex`
 >
 > This section will always tell you the truth about what works. See

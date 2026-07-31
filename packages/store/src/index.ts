@@ -51,6 +51,15 @@ export {
 export { ConsentStore, type StoredGrant } from './consent-store.js';
 
 export {
+  AssetStore,
+  UnpublishableAssetError,
+  type AssessedAsset,
+  type RecordAssetInput,
+  type RecordedAsset,
+  type StoredAsset,
+} from './asset-store.js';
+
+export {
   EnrichmentStore,
   type RecordRunInput,
   type StoredEnrichment,

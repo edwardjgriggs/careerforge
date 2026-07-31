@@ -33,6 +33,19 @@ export interface PromptTemplate {
   /** `skills@1`. The version is part of the identity, not metadata about it. */
   readonly id: string;
   readonly enrichmentType: EnrichmentType;
+  /**
+   * Whether a run of this template yields interpretation or an asset.
+   *
+   * Both are recorded as enrichment runs — same fingerprint, same cache, same
+   * policy decision — because the reproducibility story should not fork based
+   * on what the output is for. What differs is where the product is stored and
+   * what happens to it next: an asset's claims are checked against evidence
+   * before any of them may be published.
+   *
+   * Not part of the content hash. It changes what the caller does with the
+   * answer, never what the answer is.
+   */
+  readonly produces: 'enrichment' | 'asset';
   /** Static text. Interpolates nothing — a test asserts it. */
   readonly instructions: string;
   readonly schema: Readonly<Record<string, unknown>>;
@@ -84,6 +97,7 @@ artifacts and is not yours to decide. The system refuses claims built on it.`;
 const skills: PromptTemplate = {
   id: 'skills@1',
   enrichmentType: 'skills',
+  produces: 'enrichment',
   schemaName: 'skills',
   params: { temperature: 0, maxOutputTokens: 1500 },
   schema: citedArray('skills', {
@@ -124,6 +138,7 @@ Returning an empty list is a valid and often correct answer.`,
 const technologies: PromptTemplate = {
   id: 'technologies@1',
   enrichmentType: 'technologies',
+  produces: 'enrichment',
   schemaName: 'technologies',
   params: { temperature: 0, maxOutputTokens: 1000 },
   schema: citedArray('technologies', {
@@ -159,6 +174,7 @@ Returning an empty list is a valid and often correct answer.`,
 const starCandidate: PromptTemplate = {
   id: 'star_candidate@1',
   enrichmentType: 'star_candidate',
+  produces: 'enrichment',
   schemaName: 'star_candidate',
   params: { temperature: 0, maxOutputTokens: 2000 },
   schema: citedArray('candidates', {
@@ -198,6 +214,80 @@ Returning an empty list is a valid and often correct answer.`,
 };
 
 /**
+ * The résumé bullet, returned already decomposed.
+ *
+ * The whole template exists to avoid one thing: parsing prose into claims.
+ * A generator that writes a sentence and then works out what it asserted has
+ * the order backwards, and the gap between the two is exactly where a claim
+ * nobody can support survives into a résumé. So the model never returns a
+ * bullet. It returns the assertions, each typed and each cited, and the system
+ * composes the sentence itself from the ones that survive support.
+ *
+ * The consequence is the point: a claim that fails support does not get
+ * softened or reworded, its words never appear at all.
+ */
+const resumeBullet: PromptTemplate = {
+  id: 'resume_bullet@1',
+  enrichmentType: 'resume_bullet',
+  produces: 'asset',
+  schemaName: 'resume_bullet',
+  params: { temperature: 0, maxOutputTokens: 1200 },
+  schema: citedArray('claims', {
+    text: {
+      type: 'string',
+      description:
+        'One assertion as a self-contained clause, lower case, no trailing punctuation. It will be joined with others into a sentence.',
+    },
+    claimType: {
+      type: 'string',
+      enum: ['action', 'scope', 'role', 'metric', 'outcome'],
+      description:
+        'action: what was done. scope: how much or how many. role: leadership or ownership. metric: a measured result. outcome: what changed.',
+    },
+  }),
+  instructions: `You are turning a record of work into the assertions a résumé bullet would
+make. You are not writing the bullet. You return the assertions; the system
+composes the sentence from the ones the evidence can carry, and discards the
+rest without rewording them.
+
+Each assertion is one clause, in past tense, lower case, with no trailing
+punctuation — "rewrote the transcript reader to stream rather than buffer".
+They will be joined into a single sentence in the order you give them, so put
+what was done first.
+
+Label each one honestly:
+
+  action   what was done. Almost everything you return should be this.
+  scope    how much or how many — a count, a size, a breadth.
+  role     leadership, ownership, or responsibility for direction.
+  metric   a measured result: a percentage, a duration, a saving.
+  outcome  what changed as a consequence.
+
+The labels are not decoration. Each carries a different evidentiary burden,
+and mislabelling a role claim as an action is the single most damaging thing
+you can do here — it is how a person ends up defending a leadership claim in
+an interview that nothing in their record supports.
+
+${CITATION_RULE}
+
+${NO_NUMBERS_RULE}
+
+${NO_SENIORITY_RULE}
+
+Prefer fewer, plainer assertions to more impressive ones. A bullet that says
+exactly what somebody did is worth more than one that sounds senior, because
+this one has to survive being asked about. If the record shows a small piece
+of work, say the small true thing.
+
+Do not include the technologies used unless using them was the work. Do not
+characterise the work as significant, critical, or complex; the reader decides
+that.
+
+Returning an empty list is a valid answer for a work unit with nothing worth
+claiming.`,
+};
+
+/**
  * Every published template.
  *
  * Keyed by versioned id. Adding a version never removes the one before it: a
@@ -207,6 +297,7 @@ export const TEMPLATES: Readonly<Record<string, PromptTemplate>> = Object.freeze
   [skills.id]: skills,
   [technologies.id]: technologies,
   [starCandidate.id]: starCandidate,
+  [resumeBullet.id]: resumeBullet,
 });
 
 /** The version each enrichment type uses for a new run today. */
@@ -214,10 +305,21 @@ export const CURRENT_TEMPLATE: Readonly<Partial<Record<EnrichmentType, string>>>
   skills: skills.id,
   technologies: technologies.id,
   star_candidate: starCandidate.id,
+  resume_bullet: resumeBullet.id,
 });
 
+/**
+ * The types `careerforge enrich` offers.
+ *
+ * Asset-producing templates are excluded: running `resume_bullet` through the
+ * enrichment path would store a claim decomposition as though it were an
+ * interpretation, skipping the support check that is the only reason the
+ * decomposition is trustworthy. `careerforge generate` is the way in.
+ */
 export const ENRICHABLE_TYPES: readonly EnrichmentType[] = Object.freeze(
-  Object.keys(CURRENT_TEMPLATE) as EnrichmentType[],
+  Object.entries(CURRENT_TEMPLATE)
+    .filter(([, id]) => TEMPLATES[id as string]?.produces === 'enrichment')
+    .map(([type]) => type) as EnrichmentType[],
 );
 
 /**

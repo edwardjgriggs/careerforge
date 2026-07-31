@@ -3,6 +3,7 @@ import { toInstant, type EvidenceDraft, type Gap, type Platform } from '@careerf
 import type { EvidenceStore } from './evidence-store.js';
 import type { ProvenanceStore } from './provenance-store.js';
 import type { Db } from './migrations/index.js';
+import { WorkUnitStore } from './work-unit-store.js';
 
 /**
  * The interview: turning a question into evidence.
@@ -101,6 +102,11 @@ export class InterviewEngine {
     return this.db.transaction(() => {
       const emitted = this.evidence.emit(draft);
       this.provenance.markAnsweredBy(gapId, emitted.evidence.id);
+      // The answer joins the work unit now, not at the next `group` run.
+      // Without this, answering a question and immediately regenerating
+      // produced the same bullet as before: the user had done everything
+      // right and nothing changed.
+      new WorkUnitStore(this.db, this.platform).attachAnswer(gap.workUnitId, emitted.evidence.id);
       return {
         evidenceId: emitted.evidence.id,
         gapId,

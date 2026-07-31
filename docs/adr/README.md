@@ -44,3 +44,6 @@ An accepted ADR is never edited except to change status or fix errors. Disagreem
 | [0022](0022-every-refusal-names-its-remedy.md) | Every refusal names the rule and the remedy | Accepted |
 | [0023](0023-a-prompt-is-a-versioned-artifact.md) | A prompt is a versioned artifact, frozen once published | Accepted |
 | [0024](0024-an-interpretation-cites-its-inputs.md) | An interpretation cites its inputs, or it is discarded | Accepted |
+| [0025](0025-the-model-proposes-claims-not-prose.md) | The model proposes claims, and the sentence is composed afterwards | Accepted |
+| [0026](0026-confidence-describes-evidence-not-the-model.md) | Confidence describes the evidence, never the model | Accepted |
+| [0027](0027-an-outcome-is-observed-never-inferred.md) | An outcome must be observed, never inferred from the work that caused it | Accepted |

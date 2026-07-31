@@ -15,6 +15,9 @@
       "path": "../enrich"
     },
     {
+      "path": "../generate"
+    },
+    {
       "path": "../policy"
     }
   ]

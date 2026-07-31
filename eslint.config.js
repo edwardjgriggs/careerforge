@@ -137,14 +137,14 @@ export default tseslint.config(
     },
   },
 
-  // ── Enrichment cannot write anything. ───────────────────────────────────
+  // ── Enrichment and generation cannot write anything. ────────────────────
   // "AI never writes evidence" (ADR-0002) is easy to state and easy to erode
-  // one convenience import at a time. Cutting `enrich` off from the store and
-  // from every database driver makes it structural: the package that talks to
-  // models has no route to the tables that hold fact, so the rule is not
-  // something a contributor has to remember.
+  // one convenience import at a time. Cutting `enrich` and `generate` off from
+  // the store and from every database driver makes it structural: the packages
+  // that talk to models have no route to the tables that hold fact, so the rule
+  // is not something a contributor has to remember.
   {
-    files: ['packages/enrich/**/*.ts'],
+    files: ['packages/enrich/**/*.ts', 'packages/generate/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -158,7 +158,7 @@ export default tseslint.config(
             {
               group: ['better-sqlite3', 'node:sqlite', 'sqlite3', '@careerforge/store'],
               message:
-                'Enrichment produces interpretation and never writes fact. @careerforge/enrich has no route to the store by design — hand results back to the caller. See ADR-0002.',
+                'Enrichment and generation produce interpretation and never write fact. Neither package has a route to the store by design — hand results back to the caller. See ADR-0002.',
             },
           ],
         },

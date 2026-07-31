@@ -1,10 +1,12 @@
 import {
   COLLECTOR_NAMES,
+  assets,
   collect,
   consent,
   enrich,
   enrichments,
   explain,
+  generate,
   group,
   interview,
   previewEgress,
@@ -13,6 +15,7 @@ import {
   isCollectorName,
   rebuild,
   reindex,
+  review,
   search,
   timeline,
   units,
@@ -234,6 +237,58 @@ const COMMANDS: Record<string, CommandSpec> = {
       if (unit === undefined) return usageError('interpretations needs --unit <id>.');
       return enrichments(env, { workUnitId: unit, showRuns: args.includes('--runs') });
     },
+  },
+  generate: {
+    summary: 'Write a résumé bullet, and check every claim in it',
+    usage:
+      'careerforge generate resume-bullet --unit <id> [--provider <id>] [--model <name>] [--dry-run]',
+    example: 'careerforge generate resume-bullet --unit 01JEXAMPLE',
+    run: (args, env) => {
+      const kind = args.find((arg) => !arg.startsWith('--')) ?? 'resume-bullet';
+      if (kind !== 'resume-bullet') {
+        return usageError(`Unknown asset kind: ${kind}. Only resume-bullet exists so far.`);
+      }
+      const unit = flag(args, 'unit');
+      if (unit === undefined) return usageError('generate needs --unit <id>.');
+      return generate(env, {
+        workUnitId: unit,
+        providerId: flag(args, 'provider') ?? 'openai',
+        ...(flag(args, 'model') === undefined ? {} : { model: flag(args, 'model')! }),
+        dryRun: args.includes('--dry-run'),
+        force: args.includes('--force'),
+      });
+    },
+  },
+  review: {
+    summary: 'Read a draft and decide about it — nothing exports until you do',
+    usage: 'careerforge review <asset-id> [--accept | --reject | --edit "<text>"]',
+    example: 'careerforge review 01JEXAMPLE --accept',
+    run: (args, env) => {
+      const assetId = args.find((arg) => !arg.startsWith('--'));
+      if (assetId === undefined) return usageError('review needs an asset id.');
+      if (args.includes('--accept') && args.includes('--reject')) {
+        return usageError('Pass one of --accept or --reject, not both.');
+      }
+      return review(env, {
+        assetId,
+        ...(args.includes('--accept')
+          ? { decision: 'accept' as const }
+          : args.includes('--reject')
+            ? { decision: 'reject' as const }
+            : {}),
+        ...(flag(args, 'edit') === undefined ? {} : { edit: flag(args, 'edit')! }),
+      });
+    },
+  },
+  assets: {
+    summary: 'List what has been generated, or export what you have approved',
+    usage: 'careerforge assets [--unit <id>] [--markdown]',
+    example: 'careerforge assets --markdown',
+    run: (args, env) =>
+      assets(env, {
+        ...(flag(args, 'unit') === undefined ? {} : { workUnitId: flag(args, 'unit')! }),
+        markdown: args.includes('--markdown'),
+      }),
   },
   reindex: {
     summary: 'Rebuild the search index from the store',

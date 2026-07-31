@@ -143,9 +143,9 @@ describe('I3 — only policy may reach the network', () => {
   });
 });
 
-describe('enrichment produces interpretation and never fact', () => {
+describe('enrichment and generation produce interpretation, never fact', () => {
   const hasNoWriteRoute = (messages: string[]) =>
-    messages.some((m) => m.includes('never writes fact'));
+    messages.some((m) => m.includes('never write fact'));
 
   it('rejects importing the store from enrich', async () => {
     // "AI never writes evidence" (ADR-0002) is easy to state and easy to erode
@@ -162,6 +162,19 @@ describe('enrichment produces interpretation and never fact', () => {
     const messages = await lintIn(
       'enrich',
       `import Database from 'better-sqlite3';\nexport const x = Database;\n`,
+    );
+    expect(hasNoWriteRoute(messages)).toBe(true);
+  });
+
+  it('rejects importing the store from generate', async () => {
+    // The package that writes résumé bullets is the one with the most reason
+    // to want a shortcut into the evidence table, and the least business
+    // having one.
+    const messages = await lintIn(
+      'generate',
+      `import { AssetStore } from '@careerforge/store';
+export const x = AssetStore;
+`,
     );
     expect(hasNoWriteRoute(messages)).toBe(true);
   });

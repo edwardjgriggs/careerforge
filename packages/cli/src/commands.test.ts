@@ -869,3 +869,342 @@ describe('interpretations', () => {
     expect((await run(['interpretations'], env)).stderr).toContain('--unit');
   });
 });
+
+describe('generate and review', () => {
+  /** A work unit whose evidence records activity and nothing more. */
+  async function seedUnit(): Promise<{ unitId: string; evidenceIds: string[] }> {
+    await run(['init'], env);
+    const { db } = openDatabase({ path: resolvePaths(env).database });
+    try {
+      const store = new EvidenceStore(db, nodePlatform);
+      const units = new WorkUnitStore(db, nodePlatform);
+      for (const n of [0, 1]) {
+        store.emit({
+          collectorId: 'git',
+          sourceUri: `git://repo/commit/gen-${n}`,
+          kind: 'git.commit',
+          evidenceClass: 'imported',
+          sensitivity: 'internal',
+          occurredAt: toInstant(`2026-05-04T${String(9 + n).padStart(2, '0')}:00:00.000Z`),
+          occurredEnd: null,
+          context: { projectKey: 'acme', workspace: null, stream: 'feat/parser' },
+          title: `Streamed the reader, pass ${n}`,
+          summary: null,
+          excerpt: null,
+          payloadRef: null,
+          attributes: { files: ['src/reader.ts', 'src/lines.ts'] },
+          groupingHint: null,
+          collectorVersion: '1.0.0',
+          sourceFormatVersion: null,
+        });
+      }
+      units.group();
+      const unit = units.currentUnits()[0]!;
+      return { unitId: unit.id, evidenceIds: [...units.memberIds(unit.id)] };
+    } finally {
+      closeDatabase(db);
+    }
+  }
+
+  function writeCassette(evidenceIds: string[], claims: unknown): string {
+    const payload = evidenceIds
+      .map((id, n) => `[evidence ${id}]\nStreamed the reader, pass ${n}`)
+      .join('\n\n');
+    const path = join(home, 'bullet-cassette.json');
+    writeFileSync(
+      path,
+      JSON.stringify({
+        entries: [
+          {
+            name: 'resume bullet',
+            match: { schemaName: 'resume_bullet', model: 'gpt-5', payload },
+            response: {
+              value: { claims },
+              model: 'gpt-5-2026-02-01',
+              usage: { inputTokens: 200, outputTokens: 60 },
+            },
+          },
+        ],
+      }),
+    );
+    return path;
+  }
+
+  const withCassette = (path: string) => ({ ...env, CAREERFORGE_CASSETTE: path });
+
+  const grant = () =>
+    run(
+      ['consent', 'grant', '--provider', 'openai', '--project', 'acme', '--level', 'restricted'],
+      env,
+    );
+
+  it('writes a bullet and shows what stands behind every part of it', async () => {
+    const { unitId, evidenceIds } = await seedUnit();
+    await grant();
+    const cassette = writeCassette(evidenceIds, [
+      {
+        text: 'rewrote the transcript reader to stream rather than buffer',
+        claimType: 'action',
+        evidence: [evidenceIds[0]],
+      },
+      { text: 'removed the buffering path', claimType: 'action', evidence: [evidenceIds[1]] },
+    ]);
+
+    const result = await run(
+      ['generate', 'resume-bullet', '--unit', unitId],
+      withCassette(cassette),
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain(
+      'Rewrote the transcript reader to stream rather than buffer and removed the buffering path.',
+    );
+    expect(result.stdout).toContain('cites');
+    expect(result.stdout).toContain('Evidence: observed');
+    expect(result.stdout).toContain('in draft');
+  });
+
+  it('drops a leadership claim, keeps its words out, and asks instead', async () => {
+    // The behaviour the whole product is arranged around, at the CLI surface.
+    const { unitId, evidenceIds } = await seedUnit();
+    await grant();
+    const cassette = writeCassette(evidenceIds, [
+      { text: 'rewrote the transcript reader', claimType: 'action', evidence: [evidenceIds[0]] },
+      {
+        text: 'led the streaming rewrite',
+        claimType: 'role',
+        evidence: [evidenceIds[0], evidenceIds[1]],
+      },
+    ]);
+
+    const result = await run(
+      ['generate', 'resume-bullet', '--unit', unitId],
+      withCassette(cassette),
+    );
+
+    expect(result.stdout).toContain('Rewrote the transcript reader.');
+    expect(result.stdout).toContain('Left out');
+    expect(result.stdout).toMatch(/role\s+"led the streaming rewrite"/);
+    // The claim's words appear only in the "left out" report, never in the
+    // bullet itself.
+    const bulletLine = result.stdout.split('\n').find((line) => line.startsWith('Rewrote'))!;
+    expect(bulletLine).not.toContain('led');
+
+    const questions = await run(['interview', '--unit', unitId], env);
+    expect(questions.stdout).toMatch(/role/i);
+  });
+
+  it('drops an invented percentage and keeps the figure out of the text', async () => {
+    const { unitId, evidenceIds } = await seedUnit();
+    await grant();
+    const cassette = writeCassette(evidenceIds, [
+      { text: 'rewrote the transcript reader', claimType: 'action', evidence: [evidenceIds[0]] },
+      { text: 'cutting peak memory by 60%', claimType: 'metric', evidence: [evidenceIds[0]] },
+    ]);
+
+    const result = await run(
+      ['generate', 'resume-bullet', '--unit', unitId],
+      withCassette(cassette),
+    );
+    const bulletLine = result.stdout.split('\n').find((line) => line.startsWith('Rewrote'))!;
+    expect(bulletLine).not.toContain('60');
+  });
+
+  it('writes no asset when nothing survives, and records the questions', async () => {
+    const { unitId, evidenceIds } = await seedUnit();
+    await grant();
+    const cassette = writeCassette(evidenceIds, [
+      { text: 'led the migration', claimType: 'role', evidence: [evidenceIds[0]] },
+    ]);
+
+    const result = await run(
+      ['generate', 'resume-bullet', '--unit', unitId],
+      withCassette(cassette),
+    );
+    expect(result.stdout).toContain('No bullet was written');
+    expect(result.stdout).toContain('question(s) recorded');
+    expect((await run(['assets'], env)).stdout).toContain('Nothing has been generated yet');
+  });
+
+  it('corroborates a scope figure an attribute actually carries', async () => {
+    const { unitId, evidenceIds } = await seedUnit();
+    await grant();
+    const cassette = writeCassette(evidenceIds, [
+      { text: 'rewrote the transcript reader', claimType: 'action', evidence: [evidenceIds[0]] },
+      { text: 'across 2 files', claimType: 'scope', evidence: [evidenceIds[0]] },
+    ]);
+
+    const result = await run(
+      ['generate', 'resume-bullet', '--unit', unitId],
+      withCassette(cassette),
+    );
+    expect(result.stdout).toContain('across 2 files');
+    expect(result.stdout).toContain('scope figure is carried by evidence');
+  });
+
+  it('needs consent before it writes anything', async () => {
+    const { unitId } = await seedUnit();
+    const result = await run(['generate', 'resume-bullet', '--unit', unitId], env);
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toContain('consent-required@1');
+    expect(result.stdout).toContain('nothing was written');
+  });
+
+  it('shows the prompt and payload on a dry run without a key', async () => {
+    const { unitId } = await seedUnit();
+    await grant();
+    const result = await run(['generate', 'resume-bullet', '--unit', unitId, '--dry-run'], env);
+    expect(result.stdout).toContain('DRY RUN');
+    expect(result.stdout).toContain('resume_bullet@1');
+  });
+
+  it('rejects an asset kind that does not exist', async () => {
+    const result = await run(['generate', 'cover-letter', '--unit', 'x'], env);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Unknown asset kind');
+  });
+});
+
+describe('the review gate', () => {
+  async function generated(): Promise<string> {
+    await run(['init'], env);
+    const { db } = openDatabase({ path: resolvePaths(env).database });
+    let unitId: string;
+    let evidenceIds: string[];
+    try {
+      const store = new EvidenceStore(db, nodePlatform);
+      const units = new WorkUnitStore(db, nodePlatform);
+      for (const n of [0, 1]) {
+        store.emit({
+          collectorId: 'git',
+          sourceUri: `git://repo/commit/rev-${n}`,
+          kind: 'git.commit',
+          evidenceClass: 'imported',
+          sensitivity: 'internal',
+          occurredAt: toInstant(`2026-05-04T${String(9 + n).padStart(2, '0')}:00:00.000Z`),
+          occurredEnd: null,
+          context: { projectKey: 'acme', workspace: null, stream: 'main' },
+          title: `Streamed the reader, pass ${n}`,
+          summary: null,
+          excerpt: null,
+          payloadRef: null,
+          attributes: {},
+          groupingHint: null,
+          collectorVersion: '1.0.0',
+          sourceFormatVersion: null,
+        });
+      }
+      units.group();
+      unitId = units.currentUnits()[0]!.id;
+      evidenceIds = [...units.memberIds(unitId)];
+    } finally {
+      closeDatabase(db);
+    }
+
+    await run(
+      ['consent', 'grant', '--provider', 'openai', '--project', 'acme', '--level', 'restricted'],
+      env,
+    );
+    const payload = evidenceIds
+      .map((id, n) => `[evidence ${id}]\nStreamed the reader, pass ${n}`)
+      .join('\n\n');
+    const path = join(home, 'review-cassette.json');
+    writeFileSync(
+      path,
+      JSON.stringify({
+        entries: [
+          {
+            name: 'bullet',
+            match: { schemaName: 'resume_bullet', model: 'gpt-5', payload },
+            response: {
+              value: {
+                claims: [
+                  {
+                    text: 'rewrote the transcript reader to stream rather than buffer',
+                    claimType: 'action',
+                    evidence: [evidenceIds[0]],
+                  },
+                ],
+              },
+              model: 'gpt-5-2026-02-01',
+              usage: { inputTokens: 200, outputTokens: 60 },
+            },
+          },
+        ],
+      }),
+    );
+
+    const out = (
+      await run(['generate', 'resume-bullet', '--unit', unitId], {
+        ...env,
+        CAREERFORGE_CASSETTE: path,
+      })
+    ).stdout;
+    return /Recorded as (\w+), in draft/.exec(out)![1]!;
+  }
+
+  it('refuses to export a draft', async () => {
+    await generated();
+    const result = await run(['assets', '--markdown'], env);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('Nothing has been reviewed yet');
+  });
+
+  it('exports once a person has accepted it', async () => {
+    const assetId = await generated();
+    await run(['review', assetId, '--accept'], env);
+
+    const result = await run(['assets', '--markdown'], env);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain('# Experience');
+    expect(result.stdout).toContain('Rewrote the transcript reader');
+    // The evidence grade travels with the exported bullet, so a consumer can
+    // reason about quality without re-reading the store.
+    expect(result.stdout).toContain('evidence: observed');
+  });
+
+  it('refuses to export something a person rejected', async () => {
+    const assetId = await generated();
+    await run(['review', assetId, '--reject'], env);
+    expect((await run(['assets', '--markdown'], env)).exitCode).toBe(1);
+  });
+
+  it('shows the claims and the evidence when read without a decision', async () => {
+    const assetId = await generated();
+    const result = await run(['review', assetId], env);
+    expect(result.stdout).toContain('action');
+    expect(result.stdout).toContain('careerforge explain');
+    expect(result.stdout).toContain('Evidence: observed');
+    expect(result.stdout).toContain('--accept');
+  });
+
+  it('records a rewording as a style example', async () => {
+    const assetId = await generated();
+    const result = await run(
+      ['review', assetId, '--edit', 'Rewrote the transcript reader to stream rather than buffer'],
+      env,
+    );
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain('kept it as an example');
+  });
+
+  it('refuses an edit that changes what is being asserted', async () => {
+    // Accepting it would let the style loop learn to claim things nothing
+    // supports.
+    const assetId = await generated();
+    const result = await run(['review', assetId, '--edit', 'Led the streaming rewrite'], env);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('changes what is being asserted');
+    expect(result.stderr).toContain('careerforge interview');
+  });
+
+  it('says plainly when the asset does not exist', async () => {
+    await run(['init'], env);
+    expect((await run(['review', 'nope'], env)).stderr).toContain('No asset');
+  });
+
+  it('refuses two contradictory decisions at once', async () => {
+    const result = await run(['review', 'x', '--accept', '--reject'], env);
+    expect(result.exitCode).toBe(2);
+  });
+});

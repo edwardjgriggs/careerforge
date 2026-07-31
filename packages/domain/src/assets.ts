@@ -20,7 +20,20 @@ export const ASSET_TYPES = [
 
 export type AssetType = (typeof ASSET_TYPES)[number];
 
-export const REVIEW_STATES = ['draft', 'reviewed', 'exported'] as const;
+/**
+ * What a person has decided about an asset.
+ *
+ * `rejected` rather than `exported`: exporting is an act, not a judgement, and
+ * a state meaning "already left" cannot answer the question the gate actually
+ * asks. Rejection is a real review outcome and needs somewhere to live —
+ * without it, disagreeing with a draft would mean deleting it, and the store
+ * does not delete.
+ *
+ * These three matched the database schema all along; the domain listed
+ * `exported` and the mismatch was invisible because nothing had yet written an
+ * asset row. See `isExportable` for why that combination was dangerous.
+ */
+export const REVIEW_STATES = ['draft', 'reviewed', 'rejected'] as const;
 export type ReviewState = (typeof REVIEW_STATES)[number];
 
 export interface Asset {
@@ -43,9 +56,16 @@ export interface Asset {
  * scripted run, and a future desktop app all inherit it. Anything leaving as
  * a professional artifact has been seen by a human — that is the whole of
  * "humans approve professional claims".
+ *
+ * An allowlist, deliberately. This was written as `!== 'draft'` while the
+ * domain listed three states that happened to make that correct, and the
+ * database permitted a fourth — `rejected` — that the denylist would have
+ * waved straight through. An asset a person read and turned down is the last
+ * thing that should reach a résumé. A denylist is one added state away from
+ * being wrong, and it will be wrong silently.
  */
 export function isExportable(asset: Pick<Asset, 'reviewState'>): boolean {
-  return asset.reviewState !== 'draft';
+  return asset.reviewState === 'reviewed';
 }
 
 /** A user edit creates a new asset. The original is never overwritten. */

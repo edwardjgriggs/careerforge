@@ -190,6 +190,10 @@ describe('trigger coverage', () => {
       'identities',
       'policy_decisions',
       'provenance_edges',
+      // Append-only like the rest, and worth pausing over: an exemplar is a
+      // record of something a person actually did to a draft. Editing one
+      // would rewrite the history the style loop learns from.
+      'style_exemplars',
       'tombstones',
       'work_unit_members',
       'work_units',

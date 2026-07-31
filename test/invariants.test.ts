@@ -5,17 +5,30 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import {
+  assessEvidence,
+  describeSignal,
   evaluateSupport,
   isActionable,
   isExportable,
   isSupportingRelation,
   isWellFormed,
   maxSensitivity,
+  sameAssessment,
   suppressedIds,
   toInstant,
   CLAIM_TYPES,
+  EVIDENCE_GRADES,
+  EVIDENCE_SIGNALS,
+  GAP_TYPES,
+  REVIEW_STATES,
   type SupportNode,
 } from '@careerforge/domain';
+import {
+  generateBullet,
+  spansAreExact,
+  type CandidateRecord,
+  type ProposedClaim,
+} from '@careerforge/generate';
 import type { EnrichmentId, EvidenceId, ProvenanceEdgeId } from '@careerforge/domain';
 import {
   createOpenAIProvider,
@@ -562,6 +575,167 @@ describe('an AI output is a reviewable artifact, never an authority', () => {
     );
     expect(deps).not.toContain('@careerforge/store');
     expect(deps).not.toContain('better-sqlite3');
+  });
+});
+
+describe('a generated claim is checked before it is written, never after', () => {
+  const record = (overrides: Partial<CandidateRecord> = {}): CandidateRecord => ({
+    id: '01A',
+    collectorId: 'git',
+    kind: 'git.commit',
+    evidenceClass: 'imported',
+    attributes: {},
+    text: 'rewrote the reader',
+    suppressed: false,
+    ...overrides,
+  });
+
+  const generate = (proposals: readonly ProposedClaim[], available = [record()]) =>
+    generateBullet(proposals, { workUnitId: '01WU', available, openQuestionCount: 0 });
+
+  const ACTION: ProposedClaim = {
+    text: 'rewrote the transcript reader',
+    claimType: 'action',
+    evidence: ['01A'],
+  };
+
+  it.each(CLAIM_TYPES)('never lets an unsupported %s claim reach the text', (claimType) => {
+    // Every claim type, against evidence that records activity and nothing
+    // else. `action` is the only one activity alone can carry, and that is the
+    // whole taxonomy working as designed.
+    const bullet = generate([{ text: 'did the thing somehow', claimType, evidence: ['01A'] }]);
+    if (claimType === 'action') {
+      expect(bullet.claims).toHaveLength(1);
+      return;
+    }
+    expect(bullet.claims, `${claimType} survived on activity alone`).toEqual([]);
+    expect(bullet.text).toBe('');
+    expect(bullet.dropped[0]!.gapType).toBeDefined();
+  });
+
+  it('leaves no trace of a dropped claim in the rendered text', () => {
+    // The guarantee that makes this mechanical rather than diligent: the
+    // sentence is composed from survivors, so there is nothing to strip out.
+    const bullet = generate([
+      ACTION,
+      { text: 'led the entire migration', claimType: 'role', evidence: ['01A'] },
+    ]);
+    expect(bullet.text).toBe('Rewrote the transcript reader.');
+    for (const word of ['led', 'entire', 'migration']) {
+      expect(bullet.text.toLowerCase()).not.toContain(word);
+    }
+  });
+
+  it('never hedges — there is no code path from a failed claim to weaker words', () => {
+    const bullet = generate([
+      ACTION,
+      { text: 'led the migration', claimType: 'role', evidence: ['01A'] },
+    ]);
+    expect(bullet.text).not.toMatch(/helped|contributed|assisted|involved in|part of/i);
+  });
+
+  it('places every claim exactly where it says it is', () => {
+    // An explanation highlighting the wrong characters says something
+    // confident and false about which part of a bullet the evidence covers.
+    const bullet = generate([
+      ACTION,
+      { text: 'removed the buffering path', claimType: 'action', evidence: ['01A'] },
+      { text: 'added a streaming fixture', claimType: 'action', evidence: ['01A'] },
+    ]);
+    expect(spansAreExact({ text: bullet.text, claims: bullet.claims })).toBe(true);
+  });
+
+  it('turns every dropped claim into a question with a gap type', () => {
+    const bullet = generate([
+      { text: 'led it', claimType: 'role', evidence: ['01A'] },
+      { text: 'by 40%', claimType: 'metric', evidence: ['01A'] },
+    ]);
+    expect(bullet.dropped).toHaveLength(2);
+    for (const dropped of bullet.dropped) {
+      expect(GAP_TYPES).toContain(dropped.gapType);
+      expect(dropped.question.length).toBeGreaterThan(10);
+      expect(isActionable(dropped.remedy)).toBe(true);
+    }
+  });
+});
+
+describe('an asset carries a description of its evidence, not a model score', () => {
+  it('grades from counted records rather than anything a model said', () => {
+    const assessment = assessEvidence({
+      claimTypes: ['action'],
+      support: [
+        {
+          id: 'a',
+          collectorId: 'git',
+          evidenceClass: 'imported',
+          corroborating: false,
+          suppressed: false,
+          recordsOutcome: false,
+        },
+        {
+          id: 'b',
+          collectorId: 'session',
+          evidenceClass: 'imported',
+          corroborating: false,
+          suppressed: false,
+          recordsOutcome: false,
+        },
+      ],
+      droppedClaimTypes: [],
+      openQuestionCount: 0,
+    });
+    expect(assessment.grade).toBe('corroborated');
+    expect(assessment.sourceCount).toBe(2);
+  });
+
+  it('offers named grades rather than a score, so nobody averages them', () => {
+    expect(EVIDENCE_GRADES.every((grade) => typeof grade === 'string')).toBe(true);
+    expect(EVIDENCE_GRADES).toHaveLength(4);
+  });
+
+  it('gives every signal a sentence, so a limit reads the same on every surface', () => {
+    for (const signal of EVIDENCE_SIGNALS) {
+      expect(describeSignal(signal).length, signal).toBeGreaterThan(20);
+    }
+  });
+
+  it('is deterministic, so a stored assessment can be checked against a fresh one', () => {
+    const input = {
+      claimTypes: ['action'] as const,
+      support: [],
+      droppedClaimTypes: [] as const,
+      openQuestionCount: 0,
+    };
+    expect(sameAssessment(assessEvidence(input), assessEvidence(input))).toBe(true);
+  });
+});
+
+describe('nothing leaves without human approval', () => {
+  it('permits only a reviewed asset, by allowlist', () => {
+    // Written as a denylist, this was one added review state away from being
+    // wrong — and the database already had that state.
+    expect(isExportable({ reviewState: 'reviewed' })).toBe(true);
+    for (const state of REVIEW_STATES.filter((s) => s !== 'reviewed')) {
+      expect(isExportable({ reviewState: state }), state).toBe(false);
+    }
+  });
+
+  it('agrees with the schema about what a review state is', () => {
+    // The domain listed `exported` while the database permitted `rejected`.
+    // Nothing caught it because nothing had written an asset row yet.
+    const { db } = openDatabase({ path: IN_MEMORY });
+    try {
+      const sql = (
+        db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='assets'`).get() as {
+          sql: string;
+        }
+      ).sql;
+      for (const state of REVIEW_STATES) {
+        expect(sql, `schema does not permit review_state '${state}'`).toContain(`'${state}'`);
+      }
+    } finally {
+      closeDatabase(db);
+    }
   });
 });
 

@@ -526,43 +526,67 @@ CI must never require an API key. A recorded-fixture provider is the mechanism, 
 
 ## M10 — Resume bullet generation
 
-**Complexity: L** · **Depends on: M9**
+**Complexity: L** · **Depends on: M9** · **Status: complete**
 
 ### Goal
 The output that proves the thesis: an evidence-backed resume bullet whose every assertion is traceable.
 
 ### Deliverables
-- Generation pipeline: Work Unit → candidate bullet → claim decomposition → support resolution → gap emission.
-- `assets` with `review_state`, `revision_of`, `edited_by`.
-- Claim decomposition into typed claims with spans.
-- Gap emission for unsupportable claims.
-- Review gate enforced **in the export path**, not the UI.
-- Style exemplar capture on user edit.
-- Claim-set comparison distinguishing a *wording* edit from a *factual* edit.
-- Markdown exporter.
-- `careerforge generate resume-bullet --unit <id>`.
-- `careerforge review <asset-id>`.
+- [x] Generation pipeline: Work Unit → proposed claims → support resolution → gap emission → composition.
+- [x] `assets` with `review_state`, a revision chain, `edited_by`, and a stored evidence assessment.
+- [x] Claim decomposition into typed claims with spans — returned by the model, never parsed from prose.
+- [x] Gap emission for unsupportable claims.
+- [x] Review gate enforced **in the export path**, not the UI.
+- [x] Style exemplar capture on user edit.
+- [x] Claim-set comparison distinguishing a *wording* edit from a *factual* edit.
+- [x] Markdown exporter, carrying the evidence grade with each bullet.
+- [x] `careerforge generate resume-bullet --unit <id>`, `careerforge review <asset-id>`, `careerforge assets`.
+- [x] **Evidence assessment** on every asset: a grade and named signals derived from the provenance graph.
 
 ### Acceptance criteria
-- [ ] Generating from a real Work Unit produces a bullet with ≥1 supported claim.
-- [ ] A bullet containing an unsupported `role` or `metric` claim **is not produced** — the claim becomes a gap instead.
-- [ ] Every claim resolves to ≥1 provenance edge (invariant I4).
-- [ ] Exporting a `draft` asset is **refused**.
-- [ ] A user edit creates a new asset with `revision_of` set; the original remains.
-- [ ] An edit changing a claim (not wording) is routed to the interview engine.
-- [ ] Answering an emitted gap and regenerating produces a measurably stronger bullet.
-- [ ] No generated asset modifies any evidence row.
+- [x] Generating from a real Work Unit produces a bullet with ≥1 supported claim.
+- [x] A bullet containing an unsupported `role` or `metric` claim **is not produced** — the claim becomes a gap instead.
+- [x] Every claim resolves to ≥1 provenance edge (invariant I4).
+- [x] Exporting a `draft` asset is **refused**. So is exporting a `rejected` one.
+- [x] A user edit creates a new asset in the revision chain; the original remains.
+- [x] An edit changing a claim (not wording) is refused and routed to the interview engine.
+- [x] Answering an emitted gap and regenerating produces a measurably stronger bullet.
+- [x] No generated asset modifies any evidence row.
 
 ### Tests
-- Golden-path: fixture unit → expected claim structure.
-- Fabrication resistance: fixture where evidence supports no leadership; assert no `role` claim, assert gap emitted.
-- Metric resistance: assert no numeric claim without derived or confirmed support.
-- Review gate: attempt export at each `review_state`.
-- Edit classification: wording edit vs factual edit.
-- End-to-end: gap → answer → regenerate → strengthened bullet.
+- [x] Golden-path: fixture unit → expected claim structure.
+- [x] Fabrication resistance: 28 cases. Disabling the support gate fails 15 of them.
+- [x] Metric resistance: no numeric claim without derived or confirmed support.
+- [x] Review gate: every `review_state` against the export path.
+- [x] Edit classification: wording edit vs factual edit.
+- [x] End-to-end: gap → answer → regenerate → strengthened bullet, verified by hand against a real store.
 
 ### Notes
 **The fabrication-resistance tests are the most important in the project.** They are the executable form of the promise the product is built on. If they pass, CareerForge does what it claims; if they are weak, nothing else matters.
+
+### What implementation found
+
+**The model must not return prose.** The obvious pipeline — generate a bullet, decompose it, check the claims, remove the failures — is wrong at both seams. Decomposing prose is guesswork, and every span it gets slightly wrong makes an explanation point at the wrong words; removing a claim from a finished sentence is surgery that ends in hedging, which is how "led the migration" becomes "helped lead the migration" and keeps the impression while discarding the accountability. So `resume_bullet@1` returns typed, cited assertions and the sentence is composed afterwards from the survivors (ADR-0025). A failed claim's words are never placed, so there is nothing to notice and strip out, and spans are exact by construction.
+
+**Four claim rules were fine and one was wrong.** The `outcome` rule had accepted any evidence since M1, which meant a commit could support "eliminated the nightly memory alerts" — the change is not evidence of its consequence. It survived nine milestones because nothing generated an outcome claim; a predicate with no caller cannot be wrong in a way anybody notices. An outcome must now be observed, computed, or confirmed (ADR-0027).
+
+**`isExportable` was a denylist over a set that had drifted.** The domain listed `draft | reviewed | exported`; the database permitted `draft | reviewed | rejected`. `!== 'draft'` was correct against the first and waved `rejected` straight through — an asset a person read and turned down was exportable. Invisible until an asset row existed to export. It is an allowlist now, and a test asserts the domain and the schema agree on the vocabulary.
+
+**Reviewing an asset detached it from its own evidence.** Review writes a superseding row; the claims stay on the row they were recorded against. Reading support from the current row found nothing, so an accepted bullet exported as *"asserted — 0 records"* with its evidence one hop away. Claims resolve through the revision chain now — sound precisely because a factual edit is refused, so a chain always asserts the same things.
+
+**The CLI classified every edit as a rewording.** It passed the existing claim texts back as the new ones, so `classifyEdit` compared a list to itself. The claim set after an edit is derived in the store now, by substring survival, and no caller can supply it.
+
+**An answer did not reach its work unit until the next `group` run.** Found by hand-running the loop: answering the role question and regenerating produced the identical bullet. The user had done everything right and nothing changed, which is the worst possible response to somebody engaging with the interview. An answer settles a gap that names its work unit, so membership is known — it is attached at answer time.
+
+**The assessment had to read through the base evidence table.** `evidence_current` already excludes tombstoned rows, so a withdrawal looked like a record that was never cited: the counts fell and nothing said why. The assessment's job is to *report* the withdrawal, so it has to be able to see it.
+
+### Carried forward
+
+- No shipped collector emits outcome-shaped evidence, so `outcome_not_evidenced` is true of essentially every asset and outcome claims are unreachable without an interview answer. That is the honest state of a coding-artifact corpus, and the strongest argument yet for a PR or issue collector.
+- `THIN_EVIDENCE_BELOW` is an honest threshold nobody has measured. It should be derived from a corpus the way grouping's parameters were (ADR-0019).
+- Composition is `a, b, and c` with no shaping. Deliberate, and the place users are most likely to push back.
+- Style exemplars are captured but nothing consumes them yet; the generator does not receive them as few-shot examples.
+- `careerforge generate` deliberately does not cache. A bullet depends on evidence, answers, and withdrawals that do not change the run fingerprint.
 
 ---
 

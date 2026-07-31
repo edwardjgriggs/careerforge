@@ -9,16 +9,16 @@
   "exclude": ["**/*.boundary-fixture.ts", "**/*.test.ts"],
   "references": [
     {
-      "path": "../domain"
+      "path": "../../collectors/git"
     },
     {
-      "path": "../store"
-    },
-    {
-      "path": "../policy"
+      "path": "../../collectors/session"
     },
     {
       "path": "../collect"
+    },
+    {
+      "path": "../domain"
     },
     {
       "path": "../enrich"
@@ -27,13 +27,13 @@
       "path": "../generate"
     },
     {
+      "path": "../policy"
+    },
+    {
+      "path": "../store"
+    },
+    {
       "path": "../ui"
-    },
-    {
-      "path": "../../collectors/git"
-    },
-    {
-      "path": "../../collectors/session"
     }
   ]
 }

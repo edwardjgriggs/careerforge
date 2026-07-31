@@ -523,3 +523,54 @@ describe('the interview', () => {
     expect(() => interview.answer(gapId, 'I led it.')).not.toThrow();
   });
 });
+
+describe('an answer joins the work unit it answers about', () => {
+  const roleGap = (unitId: string): string =>
+    provenance.raiseGap({
+      workUnitId: unitId,
+      gapType: 'role',
+      ...QUESTION_TEMPLATES['role']!('the exporter'),
+    })!;
+
+  it('becomes a member immediately, without waiting for a regroup', () => {
+    // Found by hand-running the M10 loop: answering a question and
+    // regenerating produced the same bullet as before, because the answer was
+    // evidence but not yet part of the unit. The user had done everything
+    // right and nothing changed, which is the worst possible response to
+    // somebody engaging with the interview.
+    const unitId = groupedUnit();
+    const before = units.memberIds(unitId).length;
+
+    const answered = interview.answer(roleGap(unitId), 'I led this work.');
+
+    const after = units.memberIds(unitId);
+    expect(after).toHaveLength(before + 1);
+    expect(after).toContain(answered.evidenceId);
+  });
+
+  it('credits the person, not the grouping strategy', () => {
+    const unitId = groupedUnit();
+    const answered = interview.answer(roleGap(unitId), 'I led this work.');
+
+    const member = units.members(unitId).find((m) => m.evidenceId === answered.evidenceId)!;
+    expect(member.assignedBy).toBe('user');
+  });
+
+  it('does not double-count a corrected answer', () => {
+    // Answering the same question twice supersedes rather than adding, so the
+    // membership must not grow with it.
+    const unitId = groupedUnit();
+    interview.answer(roleGap(unitId), 'I led this work.');
+    const before = units.memberIds(unitId).length;
+
+    const second = provenance.raiseGap({
+      workUnitId: unitId,
+      gapType: 'context',
+      question: 'What problem was this solving?',
+      rationale: 'test',
+    })!;
+    interview.answer(second, 'Bootstrapping the repository.');
+
+    expect(units.memberIds(unitId)).toHaveLength(before + 1);
+  });
+});

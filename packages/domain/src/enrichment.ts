@@ -18,6 +18,20 @@ export const ENRICHMENT_TYPES = [
   'keywords',
   'star_candidate',
   'summary',
+  /**
+   * A résumé bullet.
+   *
+   * Listed here with the interpretations rather than apart from them, because
+   * that is exactly what it is. A generated bullet is a model's reading of a
+   * work unit; what makes it publishable is not that it came from a different
+   * kind of process but that every assertion inside it was checked against
+   * evidence afterwards. Giving it its own category would have implied
+   * otherwise.
+   *
+   * The run is recorded like any other — same fingerprint, same cache, same
+   * policy decision. What differs is the product: an asset, stored apart.
+   */
+  'resume_bullet',
 ] as const;
 
 export type EnrichmentType = (typeof ENRICHMENT_TYPES)[number];

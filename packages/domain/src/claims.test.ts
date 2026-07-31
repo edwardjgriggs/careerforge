@@ -71,7 +71,7 @@ function allSubsets(): { label: string; support: SupportNode[] }[] {
  *   scope    >=1 Evidence with a matching attribute value
  *   role     >=1 user_confirmed Evidence   -- never inferred
  *   metric   derived or user_confirmed     -- never model-generated
- *   outcome  >=1 Evidence
+ *   outcome  evidence that observed the result   -- never the work itself
  *
  * Two preconditions apply to every type: there must be support at all, and
  * AI interpretation alone is never support.
@@ -93,7 +93,12 @@ function oracle(claimType: ClaimType, support: readonly SupportNode[]): boolean 
     case 'metric':
       return ev.some((n) => n.evidenceClass === 'derived' || n.evidenceClass === 'user_confirmed');
     case 'outcome':
-      return ev.length > 0;
+      return ev.some(
+        (n) =>
+          n.recordsOutcome === true ||
+          n.evidenceClass === 'derived' ||
+          n.evidenceClass === 'user_confirmed',
+      );
   }
 }
 
@@ -243,17 +248,36 @@ describe('scope claims need evidence that carries the value', () => {
   });
 });
 
-describe('outcome claims need evidence, not just a grouping', () => {
+describe('outcome claims need evidence of the result, not of the work', () => {
   it('rejects an outcome supported only by a work unit', () => {
     const verdict = evaluateSupport('outcome', [{ kind: 'work_unit', id: 'wu' as WorkUnitId }]);
     expect(verdict.supported).toBe(false);
     if (!verdict.supported) expect(verdict.code).toBe('outcome_requires_evidence');
   });
 
-  it('accepts evidence of any class', () => {
-    for (const cls of ['imported', 'derived', 'user_confirmed'] as const) {
+  it('rejects an outcome resting on the commit that caused it', () => {
+    // This accepted any evidence at all until a generator existed to exploit
+    // it. A commit shows the change and says nothing about whether the alerts
+    // stopped; treating work as evidence of its own consequence is the
+    // inference the product refuses everywhere else. See ADR-0027.
+    expect(isSupported('outcome', [evidence('imported', false, 'e')])).toBe(false);
+  });
+
+  it('accepts a record that observed the result', () => {
+    const observed = { ...evidence('imported', false, 'e'), recordsOutcome: true };
+    expect(isSupported('outcome', [observed])).toBe(true);
+  });
+
+  it('accepts a computed or confirmed result', () => {
+    for (const cls of ['derived', 'user_confirmed'] as const) {
       expect(isSupported('outcome', [evidence(cls, false, 'e')]), cls).toBe(true);
     }
+  });
+
+  it('asks what changed rather than telling the user to collect more', () => {
+    const verdict = evaluateSupport('outcome', [evidence('imported', false, 'e')]);
+    expect(verdict.supported).toBe(false);
+    if (!verdict.supported) expect(verdict.remedy.kind).toBe('confirm');
   });
 });
 

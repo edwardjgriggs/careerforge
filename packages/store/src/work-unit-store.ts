@@ -276,6 +276,35 @@ export class WorkUnitStore {
     return id;
   }
 
+  /**
+   * Attach a record to a unit the user has already decided it belongs to.
+   *
+   * For interview answers. An answer settles a gap that names its work unit,
+   * so membership is known rather than inferred — but until this existed it
+   * only took effect on the next `group` run, which meant answering a question
+   * and immediately regenerating produced the same bullet as before. The user
+   * had done everything right and nothing changed, which is the worst possible
+   * response to somebody engaging with the interview.
+   *
+   * `assigned_by = 'user'` because it is: the grouping strategy did not put it
+   * here and must not claim credit for it.
+   */
+  attachAnswer(workUnitId: string, evidenceId: string): void {
+    const existing = this.db
+      .prepare(`SELECT 1 FROM work_unit_members WHERE work_unit_id = ? AND evidence_id = ?`)
+      .get(workUnitId, evidenceId);
+    if (existing !== undefined) return;
+
+    this.addMember(
+      workUnitId,
+      evidenceId,
+      'supporting',
+      'user',
+      null,
+      instantFromEpochMillis(this.platform.clock()),
+    );
+  }
+
   private addMember(
     workUnitId: string,
     evidenceId: string,

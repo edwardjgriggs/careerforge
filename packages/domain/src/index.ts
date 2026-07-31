@@ -166,6 +166,25 @@ export {
   type Remedy,
 } from './refusal.js';
 
+// ── Evidence assessment: how strong is the record, not how sure a model is ─
+export {
+  assessEvidence,
+  describeSignal,
+  gradeRank,
+  sameAssessment,
+  signalPolarity,
+  summariseAssessment,
+  EVIDENCE_GRADES,
+  EVIDENCE_SIGNALS,
+  THIN_EVIDENCE_BELOW,
+  type AssessmentInput,
+  type EvidenceAssessment,
+  type EvidenceGrade,
+  type EvidenceSignal,
+  type SignalPolarity,
+  type SupportingRecord,
+} from './assessment.js';
+
 // ── Claims: the unit of accountability ────────────────────────────────────
 export {
   evaluateSupport,

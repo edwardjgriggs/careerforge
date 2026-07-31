@@ -494,9 +494,15 @@ describe('assets', () => {
     expect(isExportable(asset({ reviewState: 'draft' }))).toBe(false);
   });
 
-  it('exports anything a human has seen', () => {
-    for (const state of REVIEW_STATES.filter((s) => s !== 'draft')) {
-      expect(isExportable(asset({ reviewState: state })), state).toBe(true);
+  it('exports only what a human approved, never merely what they saw', () => {
+    // This was written as "anything that is not a draft", which was correct
+    // while the domain listed three states that made it so — and the database
+    // permitted a fourth, `rejected`, that the denylist waved through. An
+    // asset somebody read and turned down is the last thing that should reach
+    // a résumé. The predicate is an allowlist now, and so is this test.
+    expect(isExportable(asset({ reviewState: 'reviewed' }))).toBe(true);
+    for (const state of REVIEW_STATES.filter((s) => s !== 'reviewed')) {
+      expect(isExportable(asset({ reviewState: state })), state).toBe(false);
     }
   });
 
