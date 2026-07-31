@@ -11,55 +11,65 @@ it, and the record already exists.
 
 ---
 
-> ### Status: pre-alpha — M11 of 13
+> ### Status: 0.1.0 — pre-alpha, and honest about it
 >
-> **`careerforge ui` opens a screen that answers two questions.**
+> **Start here:**
 >
-> _Why does CareerForge believe this?_ Every claim in a generated bullet is
-> marked and selectable, and selecting one shows the records behind it — each
-> labelled as something a collector observed, something CareerForge computed,
-> something you said in an interview, or a model's interpretation, which is
-> shown separately and never counts as a reason to believe anything.
->
-> _What evidence would make it stronger?_ The other half of the screen ranks
-> what you could do about it, and each option says what it would be worth:
->
-> ```
-> Confirm what your role was              Observed → Corroborated
->   Your answer becomes evidence you stand behind, which is the only
->   thing that can support a role claim.
->   > What was your role in this work? Did you lead it, or contribute to it?
->   [                                                            ]
->   [ Record this as evidence ]
->
-> Record what changed because of this work    Observed → Corroborated
->   No collector in this build observes outcomes — Git records commits and
->   sessions record conversations, and neither sees what changed afterwards.
->   Answering it yourself is the only route today.
+> ```bash
+> careerforge tour
 > ```
 >
-> Answering a question there writes evidence and the page updates. It does
-> **not** claim your bullet got better: the words still rest on the records they
-> were generated from, so the Explorer says your answer is not in the statement
-> yet and offers to regenerate. A grade that rose above unchanged text would be
-> a lie about what you are looking at.
+> Fifteen minutes, no API key, no network, and it touches nothing of yours. It
+> builds a sample store, runs the real commands against it, and after each step
+> says _why_ the system works that way. What makes CareerForge different is
+> what it refuses to do, and you have to watch that happen to believe it.
 >
-> **It binds to 127.0.0.1, and there is no option to change that.** Nothing is
-> fetched from anywhere: no CDN, no framework, no fonts. The whole page is one
-> document served from your machine.
+> **Working today:** collection from Git and AI coding sessions, grouping into
+> units of work, generation with every claim checked, the interview, the
+> provenance graph, the egress gate, and Evidence Explorer.
 >
-> **Everything on that screen works with no API key.** Only generating a new
-> statement needs one.
+> **Not built yet:** out-of-process plugins, sync, analytics, a desktop shell.
+> Each has a seam already in place and needs no schema migration to add.
 >
-> **Left for M12:** CLI polish, packaging, and the first release.
+> **`@careerforge/protocol` is unstable** and will change without a major
+> version bump until 1.0. Everything else follows semver from 0.1.0.
 >
-> Working today: `ui` · `collect` · `group` · `units` · `generate` · `review` ·
-> `assets` · `explain` · `interview` · `enrich` · `interpretations` · `consent` ·
-> `preview` · `init` · `doctor` · `search` · `timeline` · `export` · `rebuild` ·
-> `reindex`
+> Commands: `tour` · `init` · `collect` · `group` · `units` · `generate` ·
+> `review` · `assets` · `explain` · `interview` · `enrich` · `interpretations` ·
+> `consent` · `preview` · `ui` · `search` · `timeline` · `export` · `rebuild` ·
+> `reindex` · `doctor`
 >
 > This section will always tell you the truth about what works. See
 > [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for what lands when.
+
+---
+
+## Four commands
+
+```bash
+careerforge init                 # one directory, ~/.careerforge
+careerforge collect --backfill   # your Git history and AI coding sessions
+careerforge group                # into units of work you would recognise
+careerforge ui                   # read what it believes, and why
+```
+
+Nothing there needs an API key or a network. Generating a résumé bullet does;
+everything else does not, and that is enforced by the build graph rather than
+promised in a README — the domain package cannot import a provider SDK at all.
+
+> **Your AI coding transcripts expire.** Claude Code deletes them after 30 days
+> by default. The record of what you were thinking while you worked is already
+> disappearing, which makes the backfill preservation rather than convenience.
+
+### Documentation
+
+|                                                    |                                                       |
+| -------------------------------------------------- | ----------------------------------------------------- |
+| [Installing](docs/install.md)                      | Requirements, checksums, where files live             |
+| [First run](docs/first-run.md)                     | The tour, then your own work                          |
+| [The privacy model](docs/privacy.md)               | What happens to your data, and which code enforces it |
+| [Writing a collector](docs/writing-a-collector.md) | The main extension point                              |
+| [Architecture decisions](docs/adr/)                | 28 ADRs, each with what would overturn it             |
 
 ---
 

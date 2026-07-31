@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # So the release workflow can require a green matrix on all three platforms
+  # before anything is published, rather than trusting that it was green.
+  workflow_call:
 
 permissions:
   contents: read
@@ -60,6 +63,20 @@ jobs:
         env:
           # Point at a directory that exists so doctor reports a clean run.
           CAREERFORGE_HOME: ${{ runner.temp }}
+
+      # The fresh-machine test, and the one that prevents "works on my
+      # machine" — the most common way a project loses its first hundred
+      # users on a platform the maintainer does not run. The tour drives the
+      # real commands end to end: collect, group, generate, refuse, interview,
+      # regenerate, preview, consent, review. If it completes, a stranger on
+      # this platform can complete it too.
+      - name: Walk the guided tour from a clean install
+        run: node packages/cli/dist/bin.js tour --no-pause
+        env:
+          CAREERFORGE_HOME: ${{ runner.temp }}/tour-home
+          # Deliberately absent. The tour must work for somebody who has not
+          # decided to trust this with a credential yet.
+          OPENAI_API_KEY: ''
 
   no-api-key:
     name: builds and tests with no AI credentials

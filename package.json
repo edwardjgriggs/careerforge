@@ -1,9 +1,9 @@
 {
   "name": "careerforge-monorepo",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "CareerForge — an AI-powered Career Intelligence Platform. Local-first, privacy-first, evidence-backed.",
+  "description": "CareerForge \u2014 an AI-powered Career Intelligence Platform. Local-first, privacy-first, evidence-backed.",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=22.0.0"

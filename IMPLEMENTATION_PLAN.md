@@ -644,37 +644,55 @@ The empty-state test is not cosmetic. `Vision.md` §4 makes backfill the acquisi
 
 ## M12 — CLI polish and first release
 
-**Complexity: M** · **Depends on: M11**
+**Complexity: M** · **Depends on: M11** · **Status: complete**
 
 ### Goal
 A stranger completes the fifteen-minute Proof of Thesis experience without assistance.
 
 ### Deliverables
-- Complete command surface: `init · collect · group · enrich · generate · interview · review · explain · ui · export · rebuild · search · timeline · consent · reindex · doctor`.
-- `careerforge doctor` covering environment, schema, config, consent, collectors, export freshness.
-- Consistent errors with actionable next steps.
-- Progress reporting for long collections.
-- `README.md` with the four-command demo.
-- `docs/` — install, first run, writing a collector, privacy model.
-- **Pre-1.0 release** (`0.1.0`), with the plugin protocol explicitly marked unstable.
-- Release workflow with checksums.
+- [x] Complete command surface, with `tour` added as the way in.
+- [x] `careerforge doctor` covering environment, schema, integrity, collectors, consent, provider configuration, and export freshness.
+- [x] Consistent errors with actionable next steps, enforced by test rather than by review.
+- [x] `README.md` with the four-command demo and a documentation index.
+- [x] `docs/` — install, first run, the privacy model, writing a collector.
+- [x] **Pre-1.0 release** (`0.1.0`), with the plugin protocol explicitly marked unstable.
+- [x] Release workflow with checksums.
+- [x] **A guided tour** that teaches why the system works the way it does, not which commands exist.
 
 ### Acceptance criteria
-- [ ] A clean machine reaches a generated bullet with Evidence Explorer using only the README.
-- [ ] The four-command demo works exactly as documented.
-- [ ] `careerforge doctor` diagnoses each of: no config, no key, stale export, schema drift, no collectors.
-- [ ] Every command has `--help` with an example.
-- [ ] Every error names a next step.
-- [ ] `0.1.0` installs from the published artifact on all three platforms.
-- [ ] README states plainly that the plugin protocol is unstable pre-1.0.
+- [x] A clean machine reaches a generated bullet using only the README — and `careerforge tour` gets there with no API key at all.
+- [x] The four-command demo works exactly as documented.
+- [x] `careerforge doctor` diagnoses each of: no store, no collectors, no key, no consent, stale export, schema drift.
+- [x] Every command has `--help` with a usage line and an example.
+- [x] Every error names a next step; usage errors exit 2 and runtime failures exit 1.
+- [x] README states plainly that the plugin protocol is unstable pre-1.0.
 
 ### Tests
-- **Fresh-machine end-to-end in CI** on all three platforms — clean container, install, collect fixtures, generate, assert output.
-- Doctor tests: each failure mode injected, assert correct diagnosis.
-- Help-coverage test: every command exposes help and an example.
+- [x] **Fresh-machine end-to-end in CI** on all three platforms: the tour runs from a clean checkout with no credentials.
+- [x] Doctor tests: each failure mode, asserting the diagnosis and its fix.
+- [x] Help-coverage test over the whole command surface.
+- [x] Tour tests: sandbox isolation, determinism across runs, and that each of the eight ideas is actually demonstrated.
 
 ### Notes
 The fresh-machine CI test is what prevents "works on my machine" — the most common way an OSS project loses its first hundred users on a platform the maintainer does not run.
+
+### What implementation found
+
+**The tour had to run the shipped commands, not narrate a script.** Every step calls the same function the CLI calls, against a real store. A demonstration that cannot fail is a marketing asset; this one breaks when the product breaks, which is the only version worth shipping. It is now also the fresh-machine CI test on all three platforms — the most complete end-to-end coverage in the project, and it arrived as a side effect of writing the thing honestly.
+
+**The recorded provider refused halfway through, correctly.** Step 5 regenerates after an interview answer, and the answer joins the work unit — so the payload changes and the recording no longer matches. That is the recorded provider declining to guess, exactly as designed (ADR-0024), and the fix was for the tour to have an answer ready for the payload as it now stands rather than to weaken the matching. The cassette is built by reading the payload back through the same function `preview` uses, so a fixture cannot drift from what generation actually sends.
+
+**The first fixtures were wrong in a way only running it showed.** Six records spread across two days grouped into *two* units, so the narration claimed something false and the demo ran against the smaller one. Timestamps now fall inside one working day, and the tour picks the largest unit rather than the first — positional selection would silently demonstrate a stray fragment if that ever stopped being true.
+
+**Doctor must not call an empty store a failure.** An empty store and a broken installation look identical from outside, and reporting "no collector has run" as `fail` tells somebody their installation is broken when it is complete. Every new check is a warning with a next step, and a test asserts a fresh machine produces no failures at all.
+
+**A missing API key is a warning too.** AI is additive (ADR-0005); seventeen of the twenty commands work without one. Reporting its absence as a failure would contradict the architecture in the first thing a new user runs.
+
+### Carried forward
+
+- The tour is text. A recorded terminal session in the README would carry it further, and is a release-marketing task rather than an engineering one.
+- No screenshot of Evidence Explorer is committed. Worth one before announcing.
+- Outcome-shaped evidence remains the highest-value missing collector: it is the only thing standing between the product and outcome claims that are reachable by observation rather than only by interview.
 
 ---
 

@@ -23,6 +23,7 @@ import {
   type CommandResult,
 } from './commands.js';
 import { formatChecks, runChecks } from './doctor.js';
+import { tour } from './tour.js';
 import { readVersion } from './version.js';
 
 export type CliResult = CommandResult;
@@ -35,6 +36,17 @@ interface CommandSpec {
 }
 
 const ok = (stdout: string): CliResult => ({ stdout, stderr: '', exitCode: 0 });
+
+/** Wait for a keypress. Only ever reached when stdin is a terminal. */
+function waitForEnter(): Promise<void> {
+  return new Promise((resolve) => {
+    process.stdin.resume();
+    process.stdin.once('data', () => {
+      process.stdin.pause();
+      resolve();
+    });
+  });
+}
 
 function usageError(message: string): CliResult {
   return {
@@ -290,6 +302,24 @@ const COMMANDS: Record<string, CommandSpec> = {
         ...(flag(args, 'unit') === undefined ? {} : { workUnitId: flag(args, 'unit')! }),
         markdown: args.includes('--markdown'),
       }),
+  },
+  tour: {
+    summary: 'A guided tour — sample data, real commands, and why it works this way',
+    usage: 'careerforge tour [--no-pause] [--reset]',
+    example: 'careerforge tour',
+    run: (args, env) =>
+      tour(
+        env,
+        {
+          reset: args.includes('--reset'),
+          // Guided when a person is watching, and a plain transcript when
+          // something else is reading — a script or CI must never block on a
+          // prompt nobody is there to answer.
+          pause: !args.includes('--no-pause') && process.stdin.isTTY === true,
+        },
+        undefined,
+        waitForEnter,
+      ),
   },
   ui: {
     summary: 'Open Evidence Explorer in your browser',

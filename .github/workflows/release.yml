@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+# A release is a claim that this code works on the platforms it says it does.
+# The verify matrix has to pass on all three before anything is published, and
+# the artifact carries checksums so somebody downloading it can check they got
+# what was built rather than trusting the transport.
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  package:
+    name: package and checksum
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Pack the workspace
+        run: |
+          mkdir -p dist-release
+          npm pack --workspaces --pack-destination dist-release
+
+      # SHA-256 beside every artifact. A download nobody can verify is a
+      # download nobody should run, and this is the cheapest possible way to
+      # make verification available.
+      - name: Checksums
+        working-directory: dist-release
+        run: sha256sum *.tgz | tee SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: careerforge-release
+          path: dist-release/
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist-release/*.tgz
+            dist-release/SHA256SUMS
+          body: |
+            Pre-1.0. The plugin protocol (`@careerforge/protocol`) is
+            **unstable** and will change without a major version bump until
+            1.0. Everything else follows semver from 0.1.0.
+
+            Verify your download:
+
+                sha256sum -c SHA256SUMS

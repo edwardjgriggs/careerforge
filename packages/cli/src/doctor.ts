@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { arch, platform, release } from 'node:os';
 
 import {
@@ -176,11 +176,197 @@ export function checkStore(env: NodeJS.ProcessEnv = process.env): Check[] {
 }
 
 /**
+ * Whether enrichment can run.
+ *
+ * A warning, never a failure. AI is additive (ADR-0005) and everything except
+ * generation works without a key — reporting a missing key as `fail` would
+ * tell a user their installation is broken when it is complete and working,
+ * which is exactly the impression this product cannot afford to give.
+ */
+export function checkProvider(env: NodeJS.ProcessEnv = process.env): Check {
+  const key = env['OPENAI_API_KEY'];
+  if (key === undefined || key.trim() === '') {
+    return {
+      id: 'provider.key',
+      label: 'AI provider',
+      status: 'warn',
+      detail: 'no API key configured',
+      fix: 'Set OPENAI_API_KEY to generate statements. Collecting, grouping, searching, explaining, and the interview all work without one.',
+    };
+  }
+  return {
+    id: 'provider.key',
+    label: 'AI provider',
+    status: 'ok',
+    detail: 'OPENAI_API_KEY is set',
+  };
+}
+
+/**
+ * What the user has allowed to leave the machine.
+ *
+ * Never a failure either: no grants is the correct and intended starting
+ * state. It is reported because a user debugging "why was that refused?"
+ * should be able to see the answer here rather than deducing it.
+ */
+export function checkConsent(env: NodeJS.ProcessEnv = process.env): Check {
+  const paths = resolvePaths(env);
+  if (!existsSync(paths.database)) {
+    return { id: 'consent', label: 'Consent', status: 'ok', detail: 'no store yet' };
+  }
+
+  let opened: { db: Db } | null = null;
+  try {
+    opened = openDatabase({ path: paths.database });
+    const row = opened.db
+      .prepare(`SELECT COUNT(*) AS n FROM consent_grants_current WHERE revoked = 0`)
+      .get() as { n: number };
+    return {
+      id: 'consent',
+      label: 'Consent',
+      status: 'ok',
+      detail:
+        row.n === 0
+          ? 'nothing may leave this machine — the default'
+          : `${row.n} provider grant(s) in place`,
+    };
+  } catch {
+    return {
+      id: 'consent',
+      label: 'Consent',
+      status: 'ok',
+      detail: 'unreadable; see the store check',
+    };
+  } finally {
+    if (opened !== null) closeDatabase(opened.db);
+  }
+}
+
+/**
+ * Whether any collector has ever run.
+ *
+ * The single most useful diagnosis for a new user, because an empty store and
+ * a broken installation look identical from the outside and feel identical to
+ * somebody who has just installed something.
+ */
+export function checkCollectors(env: NodeJS.ProcessEnv = process.env): Check {
+  const paths = resolvePaths(env);
+  if (!existsSync(paths.database)) {
+    return {
+      id: 'collectors',
+      label: 'Collectors',
+      status: 'warn',
+      detail: 'no store yet',
+      fix: 'Run `careerforge init`, then `careerforge collect --backfill`.',
+    };
+  }
+
+  let opened: { db: Db } | null = null;
+  try {
+    opened = openDatabase({ path: paths.database });
+    const rows = opened.db
+      .prepare(`SELECT collector_id, COUNT(*) AS n FROM evidence_current GROUP BY collector_id`)
+      .all() as { collector_id: string; n: number }[];
+
+    if (rows.length === 0) {
+      return {
+        id: 'collectors',
+        label: 'Collectors',
+        status: 'warn',
+        detail: 'no collector has run yet',
+        fix: 'Run `careerforge collect --backfill`, or `careerforge tour` to see what it would do first.',
+      };
+    }
+    return {
+      id: 'collectors',
+      label: 'Collectors',
+      status: 'ok',
+      detail: rows.map((row) => `${row.collector_id} (${row.n})`).join(', '),
+    };
+  } catch {
+    return {
+      id: 'collectors',
+      label: 'Collectors',
+      status: 'warn',
+      detail: 'unreadable; see the store check',
+      fix: 'Run `careerforge doctor` again after resolving the store problem above.',
+    };
+  } finally {
+    if (opened !== null) closeDatabase(opened.db);
+  }
+}
+
+/**
+ * Whether the durable JSON copy still matches the database.
+ *
+ * A stale export is the difference between having a backup and believing you
+ * have one, and nothing else surfaces it.
+ */
+export function checkExport(env: NodeJS.ProcessEnv = process.env): Check {
+  const paths = resolvePaths(env);
+  if (!existsSync(paths.database)) {
+    return { id: 'export', label: 'Export', status: 'ok', detail: 'no store yet' };
+  }
+  if (!existsSync(paths.exportDir)) {
+    return {
+      id: 'export',
+      label: 'Export',
+      status: 'warn',
+      detail: 'never exported',
+      fix: 'Run `careerforge export`. The JSON tree is the durable copy — the database is a cache of it.',
+    };
+  }
+
+  let opened: { db: Db } | null = null;
+  try {
+    opened = openDatabase({ path: paths.database });
+    const latest = opened.db.prepare(`SELECT MAX(recorded_at) AS at FROM evidence`).get() as {
+      at: string | null;
+    };
+    const exportedAt = statSync(paths.exportDir).mtime.toISOString();
+
+    if (latest.at !== null && latest.at > exportedAt) {
+      return {
+        id: 'export',
+        label: 'Export',
+        status: 'warn',
+        detail: `evidence recorded since the last export (${exportedAt.slice(0, 10)})`,
+        fix: 'Run `careerforge export` to bring the durable copy up to date.',
+      };
+    }
+    return {
+      id: 'export',
+      label: 'Export',
+      status: 'ok',
+      detail: `current as of ${exportedAt.slice(0, 10)}`,
+    };
+  } catch {
+    return {
+      id: 'export',
+      label: 'Export',
+      status: 'ok',
+      detail: 'unreadable; see the store check',
+    };
+  } finally {
+    if (opened !== null) closeDatabase(opened.db);
+  }
+}
+
+/**
  * Doctor never throws. A diagnostic tool that crashes is worse than none, so
  * every check returns a result rather than raising.
  */
 export function runChecks(env: NodeJS.ProcessEnv = process.env): Check[] {
-  return [checkNode(), checkPlatform(), checkHome(env), ...checkStore(env)];
+  return [
+    checkNode(),
+    checkPlatform(),
+    checkHome(env),
+    ...checkStore(env),
+    checkCollectors(env),
+    checkConsent(env),
+    checkProvider(env),
+    checkExport(env),
+  ];
 }
 
 const SYMBOL: Record<CheckStatus, string> = { ok: '+', warn: '!', fail: 'x' };

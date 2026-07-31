@@ -838,6 +838,26 @@ function recordText(title: string, excerpt: string): string {
   return `${title}\n${excerpt}`;
 }
 
+/**
+ * Exactly what a provider would be shown for this work unit.
+ *
+ * Exported so the guided tour can record an answer against the real payload
+ * rather than a hand-written approximation of it. A tour whose fixture drifted
+ * from what generation actually sends would teach the wrong thing and pass its
+ * own tests while doing it.
+ */
+export function payloadForUnit(env: NodeJS.ProcessEnv, workUnitId: string): string | null {
+  const paths = resolvePaths(env);
+  if (!existsSync(paths.database)) return null;
+
+  return withStore(paths, ({ db }) => {
+    const units = new WorkUnitStore(db, nodePlatform);
+    if (units.byId(workUnitId) === null) return null;
+    const items = unitInputs(db, units, workUnitId).map(toPayloadItem);
+    return preview({ provider: resolveProvider('ollama'), purpose: 'preview', items }).payload;
+  });
+}
+
 const toPayloadItem = (input: EnrichmentInput): PayloadItem => ({
   kind: 'evidence',
   id: input.id,
