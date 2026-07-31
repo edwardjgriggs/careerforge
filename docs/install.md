@@ -40,7 +40,7 @@ provenance that you cannot check yourself is exactly the kind of claim this
 project exists to argue against, so the command is here rather than the
 reassurance.
 
-## From a release, without a registry
+## From a release, verifying what you got
 
 Tagged releases carry the same tarballs and a `SHA256SUMS` file on the
 [releases page](https://github.com/edwardjgriggs/careerforge/releases). Verify,
@@ -49,12 +49,23 @@ installing one of them alone will send npm looking for the rest:
 
 ```bash
 sha256sum -c SHA256SUMS
-npm install -g --offline ./*.tgz
+npm install -g ./*.tgz
 ```
 
-`--offline` is the point rather than a convenience: if it succeeds, nothing was
-fetched, and what you verified is exactly what you installed. A download nobody
-can verify is a download nobody should run.
+The `./` matters. Without it npm reads `careerforge-0.2.1.tgz` as a package
+name rather than a file, and goes looking for it on the registry.
+
+**One thing will still be fetched, and it is worth being exact about.**
+`better-sqlite3` is a native dependency, it is not in these tarballs, and npm
+will download it. Every `@careerforge` package comes from the files you just
+checksummed; the storage driver comes from the registry, as it would under any
+other install.
+
+Adding `--offline` will therefore fail on a machine that has never installed it
+before, which is the honest reason this page no longer tells you to. The
+release pipeline does run that check — with the third-party cache warmed first,
+so that a failure means one of *our* packages went to the network, which is the
+thing actually worth asserting.
 
 ## From source
 

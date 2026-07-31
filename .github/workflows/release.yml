@@ -52,13 +52,46 @@ jobs:
       # artifacts being unusable: every package resolving from the tarballs
       # rather than from a registry proves the dependency set is complete, and
       # the tour proves the thing a stranger runs first actually runs.
-      #
+      # `--offline` below is the assertion, so the cache has to hold the third
+      # party dependencies before it runs — otherwise the step fails on
+      # better-sqlite3 and proves nothing about our own tarballs. The spec list
+      # is read out of the workspace manifests rather than written down here, so
+      # adding a runtime dependency cannot silently weaken the check.
+      - name: Warm the cache with third-party runtime dependencies
+        run: |
+          node -e '
+            const fs = require("fs");
+            const dirs = ["packages", "collectors"].flatMap((root) =>
+              fs.readdirSync(root).map((d) => root + "/" + d),
+            );
+            const specs = new Set();
+            for (const dir of dirs) {
+              const manifest = dir + "/package.json";
+              if (!fs.existsSync(manifest)) continue;
+              const deps = JSON.parse(fs.readFileSync(manifest, "utf8")).dependencies ?? {};
+              for (const [name, range] of Object.entries(deps)) {
+                if (!name.startsWith("@careerforge/")) specs.add(name + "@" + range);
+              }
+            }
+            console.log([...specs].join("\n"));
+          ' > "$RUNNER_TEMP/third-party.txt"
+          cat "$RUNNER_TEMP/third-party.txt"
+          # A real install, not `npm cache add` — the latter caches the named
+          # package and none of its dependency tree, which leaves `--offline`
+          # failing one level further down.
+          xargs -r npm install --prefix "$RUNNER_TEMP/warm" < "$RUNNER_TEMP/third-party.txt"
+
       # The `./` is load-bearing. npm treats a bare `dist-release/foo.tgz` as the
       # GitHub shorthand `owner/repo` and goes looking for it over SSH; only a
       # path beginning `./`, `../`, or `/` is read as a local tarball. This step
       # failed on exactly that the first time it ever ran, which is the argument
       # for the step existing: docs/install.md has always told users `./*.tgz`,
       # and the release pipeline was the one place getting it wrong.
+      #
+      # With the cache warm, `--offline` now means what it is here to mean: not
+      # one `@careerforge` package was fetched, so the tarball set is complete
+      # and a stranger installing this release will not be sent to a registry
+      # looking for something that is not there.
       - name: Install the artifacts offline and walk the tour
         run: |
           npm install -g --offline --prefix "$RUNNER_TEMP/pfx" ./dist-release/*.tgz
