@@ -94,7 +94,7 @@ export default tseslint.config(
   // is the single choke point through which evidence may leave the machine.
   {
     files: ['packages/**/*.ts'],
-    ignores: ['packages/policy/**/*.ts'],
+    ignores: ['packages/policy/**/*.ts', 'packages/ui/**/*.ts'],
     rules: {
       ...restrict(
         [...NETWORK_MODULES, ...AI_SDKS],
@@ -161,6 +161,32 @@ export default tseslint.config(
                 'Enrichment and generation produce interpretation and never write fact. Neither package has a route to the store by design — hand results back to the caller. See ADR-0002.',
             },
           ],
+        },
+      ],
+    },
+  },
+
+  // ── Listening is not sending. ───────────────────────────────────────────
+  // `packages/ui` serves the Evidence Explorer to the user's own browser, so
+  // it needs `node:http` — which exports two unrelated capabilities that
+  // happen to share a module. `createServer` accepts a connection and cannot
+  // originate one; `request` can. Only the second moves evidence off the
+  // machine, so only the second stays banned, along with every dedicated
+  // client and the global fetch. The bind host is a constant, not an option.
+  // See ADR-0028.
+  {
+    files: ['packages/ui/**/*.ts'],
+    rules: {
+      ...restrict(
+        [...NETWORK_MODULES.filter((name) => name !== 'http' && name !== 'node:http'), ...AI_SDKS],
+        'Invariant I3: @careerforge/ui may listen, never send. Only node:http (createServer) is permitted here. See ADR-0028.',
+      ),
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'fetch',
+          message:
+            'Invariant I3: @careerforge/ui may listen, never send. Route any outbound call through the Policy Engine. See ADR-0028.',
         },
       ],
     },

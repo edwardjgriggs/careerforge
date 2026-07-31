@@ -14,6 +14,7 @@ import {
   isWellFormed,
   maxSensitivity,
   sameAssessment,
+  suggestImprovements,
   suppressedIds,
   toInstant,
   CLAIM_TYPES,
@@ -29,6 +30,7 @@ import {
   type CandidateRecord,
   type ProposedClaim,
 } from '@careerforge/generate';
+import { renderPage, BIND_HOST } from '@careerforge/ui';
 import type { EnrichmentId, EvidenceId, ProvenanceEdgeId } from '@careerforge/domain';
 import {
   createOpenAIProvider,
@@ -736,6 +738,80 @@ describe('nothing leaves without human approval', () => {
     } finally {
       closeDatabase(db);
     }
+  });
+});
+
+describe('the Explorer explains rather than displays', () => {
+  it('answers what evidence would make a statement stronger, with computed effects', () => {
+    // The second question Evidence Explorer exists for. A list of what is
+    // missing, with no indication of what any of it is worth, is a to-do list.
+    const support = [
+      {
+        id: 'a',
+        collectorId: 'git',
+        evidenceClass: 'imported' as const,
+        corroborating: false,
+        suppressed: false,
+        recordsOutcome: false,
+      },
+    ];
+    const improvements = suggestImprovements({
+      workUnitId: '01WU',
+      assessment: assessEvidence({
+        claimTypes: ['action'],
+        support,
+        droppedClaimTypes: [],
+        openQuestionCount: 1,
+      }),
+      support,
+      claimTypes: ['action'],
+      openGaps: [{ id: '01G', gapType: 'role', question: 'Did you lead this?' }],
+      outcomeCollectorAvailable: false,
+    });
+
+    expect(improvements.length).toBeGreaterThan(0);
+    for (const improvement of improvements) {
+      expect(improvement.effect.gradeNow).toBeDefined();
+      expect(improvement.effect.gradeAfter).toBeDefined();
+      expect(improvement.why.length).toBeGreaterThan(30);
+    }
+    // Best first: something that moves the grade outranks something that does not.
+    expect(improvements[0]!.effect.raisesGrade || improvements[0]!.effect.unlocks.length > 0).toBe(
+      true,
+    );
+  });
+
+  it('serves the Explorer to this machine and offers no way to change that', () => {
+    // A career store reachable from a local network fails very quietly.
+    expect(BIND_HOST).toBe('127.0.0.1');
+    const source = readFileSync(join(ROOT, 'packages/ui/src/server.ts'), 'utf8');
+    expect(source).toContain('server.listen(port, BIND_HOST');
+    expect(source).not.toMatch(/host\s*[:?]/i);
+  });
+
+  it('gives the UI no route to send anything', () => {
+    const manifest: unknown = JSON.parse(
+      readFileSync(join(ROOT, 'packages/ui/package.json'), 'utf8'),
+    );
+    const deps = Object.keys(
+      (manifest as { dependencies?: Record<string, string> }).dependencies ?? {},
+    );
+    expect(deps.sort()).toEqual(['@careerforge/domain', '@careerforge/store']);
+  });
+
+  it('renders a page that needs nothing from anywhere', () => {
+    // A page about whether you can trust what you are reading must not make a
+    // third party a participant in reading it.
+    const page = renderPage({
+      assets: [],
+      units: [],
+      questions: [],
+      totals: { evidence: 0, units: 0, assets: 0, questions: 0 },
+    });
+    expect(page).not.toMatch(/<script[^>]+src=/i);
+    expect(page).not.toMatch(/<link[^>]+href=/i);
+    // And an empty store gets a screen full of what to do next, not "no data".
+    expect(page).toContain('careerforge collect --backfill');
   });
 });
 

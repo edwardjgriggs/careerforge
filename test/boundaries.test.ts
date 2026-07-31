@@ -193,6 +193,49 @@ export const x = AssetStore;
   });
 });
 
+describe('the UI may listen and may not send', () => {
+  it('permits a server import — it accepts connections and cannot originate one', async () => {
+    // `node:http` exports two unrelated capabilities that share a module.
+    // Only `request` can move evidence off the machine. See ADR-0028.
+    const messages = await lintIn(
+      'ui',
+      `import { createServer } from 'node:http';
+export const x = createServer;
+`,
+    );
+    expect(hasI3(messages)).toBe(false);
+  });
+
+  it('still rejects a dedicated HTTP client there', async () => {
+    const messages = await lintIn(
+      'ui',
+      `import { request } from 'undici';
+export const x = request;
+`,
+    );
+    expect(hasI3(messages)).toBe(true);
+  });
+
+  it('still rejects the global fetch there', async () => {
+    const messages = await lintIn(
+      'ui',
+      `export const get = () => fetch('https://example.com');
+`,
+    );
+    expect(hasI3(messages)).toBe(true);
+  });
+
+  it('still rejects an AI SDK there', async () => {
+    const messages = await lintIn(
+      'ui',
+      `import OpenAI from 'openai';
+export const x = OpenAI;
+`,
+    );
+    expect(hasI3(messages)).toBe(true);
+  });
+});
+
 describe('protocol stays standalone for plugin authors', () => {
   it('rejects importing a sibling package', async () => {
     const messages = await lintIn(

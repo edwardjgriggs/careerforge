@@ -18,6 +18,7 @@ import {
   review,
   search,
   timeline,
+  ui,
   units,
   type CommandResult,
 } from './commands.js';
@@ -288,6 +289,16 @@ const COMMANDS: Record<string, CommandSpec> = {
       assets(env, {
         ...(flag(args, 'unit') === undefined ? {} : { workUnitId: flag(args, 'unit')! }),
         markdown: args.includes('--markdown'),
+      }),
+  },
+  ui: {
+    summary: 'Open Evidence Explorer in your browser',
+    usage: 'careerforge ui [--port <n>] [--no-open]',
+    example: 'careerforge ui',
+    run: (args, env) =>
+      ui(env, {
+        port: numericFlag(args, 'port', 7777),
+        open: !args.includes('--no-open'),
       }),
   },
   reindex: {

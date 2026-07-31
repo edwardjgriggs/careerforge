@@ -47,3 +47,4 @@ An accepted ADR is never edited except to change status or fix errors. Disagreem
 | [0025](0025-the-model-proposes-claims-not-prose.md) | The model proposes claims, and the sentence is composed afterwards | Accepted |
 | [0026](0026-confidence-describes-evidence-not-the-model.md) | Confidence describes the evidence, never the model | Accepted |
 | [0027](0027-an-outcome-is-observed-never-inferred.md) | An outcome must be observed, never inferred from the work that caused it | Accepted |
+| [0028](0028-listening-is-not-sending.md) | Listening is not sending | Accepted |

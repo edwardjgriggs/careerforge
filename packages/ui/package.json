@@ -17,7 +17,8 @@
     "dist"
   ],
   "dependencies": {
-    "@careerforge/domain": "0.1.0"
+    "@careerforge/domain": "0.1.0",
+    "@careerforge/store": "0.1.0"
   },
   "scripts": {
     "build": "tsc --build"

@@ -11,51 +11,49 @@ it, and the record already exists.
 
 ---
 
-> ### Status: pre-alpha — M10 of 13
+> ### Status: pre-alpha — M11 of 13
 >
-> **It writes résumé bullets now, and refuses most of what a model proposes.**
+> **`careerforge ui` opens a screen that answers two questions.**
 >
-> Ask it to write about a piece of work and the model returns typed, cited
-> assertions — never a sentence. Each one is checked against your evidence, and
-> whatever the evidence cannot carry is **removed and turned into a question**,
-> not softened. The bullet is composed afterwards from what survived, so a
-> refused claim's words never appear at all.
+> _Why does CareerForge believe this?_ Every claim in a generated bullet is
+> marked and selectable, and selecting one shows the records behind it — each
+> labelled as something a collector observed, something CareerForge computed,
+> something you said in an interview, or a model's interpretation, which is
+> shown separately and never counts as a reason to believe anything.
 >
-> Against ten real commits, a model proposing five claims produced this:
+> _What evidence would make it stronger?_ The other half of the screen ranks
+> what you could do about it, and each option says what it would be worth:
 >
 > ```
-> Built the CareerForge monorepo with enforced architectural boundaries.
+> Confirm what your role was              Observed → Corroborated
+>   Your answer becomes evidence you stand behind, which is the only
+>   thing that can support a role claim.
+>   > What was your role in this work? Did you lead it, or contribute to it?
+>   [                                                            ]
+>   [ Record this as evidence ]
 >
-> Left out — the evidence does not carry them:
->   role     "led the architecture decisions across the platform"
->   scope    "covering 10 commits"
->   metric   "cutting onboarding time by 50%"
->   outcome  "eliminating architectural drift"
->
-> Evidence: observed — 2 records from 1 source(s)
->   - Based only on observed activity. Nobody confirmed any part of it.
->   - No evidence records what changed because of this work.
+> Record what changed because of this work    Observed → Corroborated
+>   No collector in this build observes outcomes — Git records commits and
+>   sessions record conversations, and neither sees what changed afterwards.
+>   Answering it yourself is the only route today.
 > ```
 >
-> Answer the role question and regenerate, and the claim comes back — supported
-> by you, and the grade rises from `observed` to `corroborated`.
+> Answering a question there writes evidence and the page updates. It does
+> **not** claim your bullet got better: the words still rest on the records they
+> were generated from, so the Explorer says your answer is not in the statement
+> yet and offers to regenerate. A grade that rose above unchanged text would be
+> a lie about what you are looking at.
 >
-> **Every asset carries an assessment of its evidence, not a model's
-> confidence.** How many independent sources, whether you confirmed anything,
-> whether an outcome was ever observed, what had to be left out. A consumer can
-> judge quality without re-reading the store, and it is recomputed on every
-> read — if the evidence moves, it says so.
+> **It binds to 127.0.0.1, and there is no option to change that.** Nothing is
+> fetched from anywhere: no CDN, no framework, no fonts. The whole page is one
+> document served from your machine.
 >
-> **Nothing leaves until you have read it.** The export gate is in the export
-> path, not the UI. A draft cannot be exported; neither can something you
-> rejected.
+> **Everything on that screen works with no API key.** Only generating a new
+> statement needs one.
 >
-> **Collection, grouping, proof, and consent all still work with no API key.**
-> Only generation and enrichment need one.
+> **Left for M12:** CLI polish, packaging, and the first release.
 >
-> **The Evidence Explorer UI is still to come.** That is M11.
->
-> Working today: `collect` · `group` · `units` · `generate` · `review` ·
+> Working today: `ui` · `collect` · `group` · `units` · `generate` · `review` ·
 > `assets` · `explain` · `interview` · `enrich` · `interpretations` · `consent` ·
 > `preview` · `init` · `doctor` · `search` · `timeline` · `export` · `rebuild` ·
 > `reindex`

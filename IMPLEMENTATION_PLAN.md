@@ -592,36 +592,53 @@ The output that proves the thesis: an evidence-backed resume bullet whose every 
 
 ## M11 — Evidence Explorer
 
-**Complexity: L** · **Depends on: M10**
+**Complexity: L** · **Depends on: M10** · **Status: complete**
 
 ### Goal
-The screenshot that sells the project.
+The screenshot that sells the project — a screen that answers *why does CareerForge believe this?* and *what evidence would make it stronger?*
 
 ### Deliverables
-- Local web UI served by the CLI (`careerforge ui`), same core APIs as the CLI.
-- Bullet view with **claim spans highlighted by support state**.
-- Click a claim → its support set, each item labelled by class (`imported` / `derived` / `user_confirmed` / `ai_enrichment`) — the four-way distinction from `Vision.md` §7 shown literally.
-- **Missing Information panel, interactive** — clicking a gap launches the interview inline.
-- Timeline and search views.
-- Sensitivity indicators on evidence.
+- [x] Local web UI served by the CLI (`careerforge ui`), reading the same stores the CLI does.
+- [x] Bullet view with **claim spans marked and individually selectable**.
+- [x] Click a claim → its support set, each item labelled by class — the four-way distinction from `Vision.md` §7 shown literally, in words rather than class names.
+- [x] **Missing Information panel, interactive** — answering a question inline writes evidence and re-renders.
+- [x] Sensitivity indicators on every evidence item.
+- [x] **Strengthening paths**: each improvement carries the grade it would produce and the claim types it would unlock, ranked by what it would actually change.
 
 ### Acceptance criteria
-- [ ] `careerforge ui` opens a browser to a generated bullet.
-- [ ] Every claim is individually clickable and resolves to its support set.
-- [ ] Support items are visibly labelled by class.
-- [ ] Missing Information lists open gaps and answering one updates the bullet without a restart.
-- [ ] The UI binds to localhost only.
-- [ ] Timeline and search function **with no API key**.
-- [ ] Sensitivity is visible on every evidence item.
+- [x] `careerforge ui` opens a browser to a generated bullet.
+- [x] Every claim is individually selectable and resolves to its support set.
+- [x] Support items are visibly labelled by class.
+- [x] Missing Information lists open questions and answering one updates the page without a restart.
+- [x] The UI binds to localhost only — asserted against the listening socket *and* against the absence of any option to change it.
+- [x] Everything on the screen functions **with no API key**.
+- [x] Sensitivity is visible on every evidence item.
 
 ### Tests
-- Component tests for claim highlighting across support states.
-- Integration: gap answered in UI → evidence written → bullet regenerated.
-- Binding test: assert no non-loopback listener.
-- Empty-state test: fresh install renders a useful screen, not a blank one.
+- [x] Render tests for claim marking, class labelling, and grade presentation across all four grades.
+- [x] Integration: question answered → evidence written → page reflects it.
+- [x] Binding test: the listening address is loopback, and the source contains no host option.
+- [x] Empty-state test: a fresh install renders a useful screen, not a blank one.
 
 ### Notes
 The empty-state test is not cosmetic. `Vision.md` §4 makes backfill the acquisition model, and a sparse database must be **visibly full of answerable questions** rather than visibly empty. This is where cold start is won or lost.
+
+### What implementation found
+
+**"What would make this stronger?" needed to be a domain concept, not a UI list.** The naive version is a list of open questions, which is a to-do list: it says what is missing without saying what any of it is worth, so somebody looking at four questions cannot tell that answering one turns a bullet from unusable into publishable while answering another changes nothing they can see. Because `assessEvidence` is pure and total, the same function that grades the evidence now can grade it *as it would be* — so every improvement carries a computed effect, and the ranking is part of the answer.
+
+**Answering a question does not improve the statement, and saying otherwise would be a lie.** The first version of the integration test asserted the grade rose from `observed` to `corroborated` after an interview answer. It does not, and it should not: the words on screen still rest on the records they were generated from. Answering strengthens the *evidence*; the *sentence* only improves when regenerated. The Explorer now says exactly that, at the top of the list — *"Regenerate — your answer is not in this statement yet"* — rather than showing an improved grade above unchanged text.
+
+**The first real screenshot found two things tests could not.** The "regenerate" prompt fired on every asset with *"8 record(s) here are not used by this statement"*, because a bullet never cites every record in its unit — which is normal, and neither a problem nor news. It now triggers only on evidence recorded *after* the statement. And showing one claim's proof at a time left most of the answer to question one off screen and half the page empty; every proof renders now, with the selected one brought forward rather than revealed.
+
+**Listening is not sending** (ADR-0028). `node:http` exports two unrelated capabilities that share a module: `createServer` accepts a connection and cannot originate one, `request` can. Only the second moves evidence off the machine, so only the second stays banned in `packages/ui`. The bind host is a constant rather than an option, because a flag that exposes a career database to a local network is a flag somebody eventually sets on advice from a forum post.
+
+### Carried forward
+
+- Timeline and search views are not in the Explorer; both work at the CLI. The two questions took the whole screen, and adding navigation would have made it the graph viewer this milestone set out not to build.
+- Regeneration is a printed command rather than a button. Generating needs a provider and consent, and putting an egress-triggering button on a read-only page deserves its own thinking.
+- The page reloads after an answer rather than patching. An answer changes the grade, the signals, and the ranking of every remaining improvement; patching one panel would leave the rest quietly stale, which on this screen means quietly wrong.
+- No screenshot is committed. The Explorer is worth one in the README before release (M12).
 
 ---
 

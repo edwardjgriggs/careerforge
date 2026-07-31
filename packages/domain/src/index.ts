@@ -185,6 +185,18 @@ export {
   type SupportingRecord,
 } from './assessment.js';
 
+// ── Strengthening: what evidence would make this better ───────────────────
+export {
+  hasActionableImprovement,
+  suggestImprovements,
+  IMPROVEMENT_KINDS,
+  type Improvement,
+  type ImprovementAction,
+  type ImprovementEffect,
+  type ImprovementKind,
+  type StrengtheningContext,
+} from './strengthening.js';
+
 // ── Claims: the unit of accountability ────────────────────────────────────
 export {
   evaluateSupport,
