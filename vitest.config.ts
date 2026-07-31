@@ -40,5 +40,13 @@ export default defineConfig({
     // parallel with a lint of the same tree would not.
     fileParallelism: true,
     testTimeout: 30_000,
+    // The same allowance for hooks, and for the same reason. The scale tests
+    // build ten thousand records and two full exports in a temp directory,
+    // and `afterEach` deletes that tree — a recursive delete that a Windows CI
+    // runner does not finish inside Vitest's ten-second default. Raising the
+    // test timeout and leaving the cleanup on the default made the suite fail
+    // on the platform this project claims as first-class, in a hook rather
+    // than in an assertion, which is the least legible way to fail.
+    hookTimeout: 30_000,
   },
 });
