@@ -1,0 +1,64 @@
+name: It claimed something it should not have
+description: A generated statement was not carried by the evidence behind it.
+labels: ['provenance', 'bug', 'priority']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **This is the most important bug class in the project.** The whole premise is that
+        a generated claim is carried by its support, and that unsupported claims are
+        removed rather than softened. A claim that escaped that check is a failure of the
+        thesis, not a cosmetic defect.
+
+        The reverse case belongs here too: something the evidence *did* carry that was
+        refused anyway. An over-cautious engine that refuses everything is also broken.
+
+        **Do not paste real evidence.** Describe the shape, or reproduce it against
+        `careerforge tour`, whose sample store is synthetic and safe to quote in full.
+
+  - type: dropdown
+    id: direction
+    attributes:
+      label: Which way did it fail?
+      options:
+        - It asserted something the evidence does not carry
+        - It refused something the evidence does carry
+    validations:
+      required: true
+
+  - type: textarea
+    id: statement
+    attributes:
+      label: The statement
+      description: The generated text, or the part of it at issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: explain
+    attributes:
+      label: '`careerforge explain <claim-id>` output'
+      description: >-
+        What it says stands behind the claim. Redact titles and paths as needed —
+        the structure matters more than the content.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why that support does not carry the claim
+      description: >-
+        For example: a `role` claim resting on observed activity rather than a confirmed
+        answer, a `metric` that was not computed from anything, or an `outcome` inferred
+        from the work that caused it.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: CareerForge version
+    validations:
+      required: true

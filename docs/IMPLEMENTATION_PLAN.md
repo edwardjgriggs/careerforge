@@ -66,7 +66,7 @@ M0 bootstrap
 A repository a stranger can clone, install, build, and test in under five minutes — with the architectural invariants enforced from the first commit rather than retrofitted.
 
 ### Deliverables
-- Own Git repository, outside `ai-workspace`, with clean history (`Vision.md` §15.5).
+- Own Git repository, with clean history (`Vision.md` §15.3).
 - TypeScript monorepo per `Architecture.md` §11: `domain`, `store`, `policy`, `collect`, `enrich`, `generate`, `protocol`, `cli`, `ui`.
 - Build, test, lint, format, typecheck. Strict TypeScript.
 - **Import-boundary lint rule** enforcing invariant I1 (`domain` imports no adapter, no HTTP, no AI SDK) and I3 (`policy` is the only package permitted an HTTP client).
@@ -718,7 +718,7 @@ Each has a defined seam and requires **no schema migration** to add.
 
 | # | Item | Surfaces at |
 |---|---|---|
-| 1 | Outcome-shaped evidence for non-developers (`Vision.md` §15.3) | After M12 — a product problem, not an architecture one |
+| 1 | Outcome-shaped evidence for non-developers (`Vision.md` §15.4) | After M12 — a product problem, not an architecture one |
 | 2 | Local-model pre-screen for non-deterministic redaction | M8 (deferred within) |
 | 3 | Subagent transcript recovery from `~/.claude/tasks/` | M5 (explicitly out of scope) |
 | 4 | `context-temporal@1` threshold values | M6 — requires real-data tuning |

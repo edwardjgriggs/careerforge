@@ -1,0 +1,32 @@
+version: 2
+
+# A tool that reads commit history and coding transcripts and holds AI provider keys
+# should not be running a dependency set nobody is watching. The runtime dependency
+# surface is deliberately tiny, so this stays quiet — which is the point: when it does
+# open a PR, it means something.
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for the toolchain rather than six. These move together and are verified
+      # by the same `npm run verify` either way.
+      dev-tooling:
+        dependency-type: development
+        patterns: ['*']
+        update-types: ['minor', 'patch']
+    commit-message:
+      prefix: 'deps'
+      prefix-development: 'deps(dev)'
+    labels: ['dependencies']
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'ci'
+    labels: ['dependencies', 'ci']

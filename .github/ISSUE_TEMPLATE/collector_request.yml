@@ -1,0 +1,75 @@
+name: Collector request
+description: A source of work evidence CareerForge cannot read yet.
+labels: ['collector', 'enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Collectors are the main extension point. Most integrations belong in their own
+        repository rather than in-tree — the core stays deliberately small — but the
+        request is still worth filing, because it tells us what the contract is missing.
+
+        Read [docs/writing-a-collector.md](https://github.com/edwardjgriggs/careerforge/blob/main/docs/writing-a-collector.md)
+        first; you may find you can write it today.
+
+  - type: input
+    id: source
+    attributes:
+      label: The source
+      placeholder: 'Jira · Obsidian · Outlook calendar · ServiceNow · a shell history file'
+    validations:
+      required: true
+
+  - type: textarea
+    id: shape
+    attributes:
+      label: What one record looks like
+      description: >-
+        One artifact from this source, as a shape rather than real data. What is the
+        stable identifier? What timestamp says when the work actually happened?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: evidence-shape
+    attributes:
+      label: Is this activity-shaped or outcome-shaped evidence?
+      description: >-
+        Activity-shaped records say what you did. Outcome-shaped records say what
+        changed as a result. CareerForge has plenty of the first kind and very
+        little of the second, and the second is the harder open problem.
+      options:
+        - Activity-shaped (it records work happening)
+        - Outcome-shaped (it records something that changed)
+        - Both
+    validations:
+      required: true
+
+  - type: textarea
+    id: backfill
+    attributes:
+      label: How would you replay the past from it?
+      description: >-
+        Every collector must answer this, not just "how do you watch the present".
+        Backfill is the answer to a cold start. If history is not retrievable from
+        this source, say so — that is a real constraint, not a disqualification.
+    validations:
+      required: true
+
+  - type: textarea
+    id: sensitivity
+    attributes:
+      label: How sensitive is this source?
+      description: >-
+        public · internal · confidential · restricted. What is the worst thing that
+        could be in one of these records — credentials, client identifiers,
+        uncommitted code, personnel discussion?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: Would you write it?
+      options:
+        - label: I would be willing to implement this collector.

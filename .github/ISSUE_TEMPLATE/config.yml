@@ -1,0 +1,13 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/edwardjgriggs/careerforge/security/advisories/new
+    about: >-
+      Never open a public issue for a security problem. Report privately here.
+      Anything that lets evidence leave the machine without passing the Policy
+      Engine is the most serious class of bug in this project.
+  - name: Question, idea, or "am I holding it wrong?"
+    url: https://github.com/edwardjgriggs/careerforge/discussions
+    about: >-
+      Discussions are the right place for questions and half-formed ideas.
+      An issue is for something with a definite shape.

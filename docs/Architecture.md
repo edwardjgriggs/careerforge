@@ -1,6 +1,6 @@
 # CareerForge — Architecture
 
-**Status:** Draft for review
+**Status:** Frozen. Changed only by an ADR that supersedes the relevant section.
 **Date:** 2026-07-30
 **Depends on:** `Vision.md` (frozen), `docs/PreArchitecture-Findings.md`
 
@@ -709,7 +709,7 @@ Grants are keyed on `(project_key, provider_id, max_sensitivity)`. This is what 
 
 ### 10.3 Deterministic redaction
 
-Open question #4 in `Vision.md` §15 is narrowed here, not closed.
+Open question #5 in `Vision.md` §15 is narrowed here, not closed.
 
 **Detected deterministically** (pattern- and entropy-based, no AI): private keys and certificate blocks, common cloud and vendor token formats, connection strings, `Authorization` headers, `.env`-style assignments, high-entropy strings in credential-shaped contexts, email addresses, absolute paths containing usernames.
 
@@ -790,8 +790,7 @@ If the architecture is right, these are all "no schema change":
 
 | # | Item | Blocks |
 |---|---|---|
-| 1 | Outcome-shaped evidence for non-developers (`Vision.md` §15.3) | Serving secondary personas |
+| 1 | Outcome-shaped evidence for non-developers (`Vision.md` §15.4) | Serving secondary personas |
 | 2 | Local-model pre-screen for non-deterministic redaction (§10.3) | Redaction milestone |
 | 3 | Subagent transcript recovery from `~/.claude/tasks/` | AI Session collector completeness |
-| 4 | `context-temporal@1` threshold values | Requires real-data tuning |
-| 5 | Repository placement (`Vision.md` §15.5) | Any public activity |
+| 4 | `context-temporal@1` threshold values | Requires real-data tuning — scored against [`eval/grouping/`](../eval/grouping/) |

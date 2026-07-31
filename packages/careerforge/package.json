@@ -2,7 +2,7 @@
   "name": "careerforge",
   "version": "0.2.0",
   "type": "module",
-  "description": "CareerForge - a local-first evidence engine for your work history. Every generated claim cites the evidence behind it, and unsupported claims are refused rather than softened.",
+  "description": "Local-first evidence engine for your work history. Turns your Git commits and AI coding sessions into resume bullets, STAR stories, and interview answers where every claim cites the records behind it — and unsupported claims are refused rather than softened. No account, no telemetry, no API key required.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -18,13 +18,30 @@
     "node": ">=22.0.0"
   },
   "keywords": [
-    "local-first",
-    "provenance",
-    "privacy",
-    "evidence",
-    "career",
     "resume",
-    "cli"
+    "cv",
+    "resume-builder",
+    "career",
+    "work-history",
+    "star-method",
+    "interview-prep",
+    "portfolio",
+    "brag-document",
+    "performance-review",
+    "local-first",
+    "offline-first",
+    "privacy",
+    "provenance",
+    "evidence",
+    "traceability",
+    "no-hallucination",
+    "git",
+    "git-history",
+    "claude-code",
+    "ai-optional",
+    "sqlite",
+    "cli",
+    "developer-tools"
   ],
   "files": [
     "bin.js"

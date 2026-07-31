@@ -2,7 +2,14 @@
   "name": "@careerforge/protocol",
   "version": "0.2.0",
   "type": "module",
-  "description": "CareerForge plugin protocol types. Zero dependencies; published for plugin authors.",
+  "description": "CareerForge plugin protocol types — JSON-RPC over stdio, capability manifests, evidence drafts. Zero dependencies, published for plugin authors in any language. UNSTABLE until 1.0: this package will change without a major version bump.",
+  "keywords": [
+    "careerforge",
+    "plugin",
+    "protocol",
+    "json-rpc",
+    "capabilities"
+  ],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

@@ -16,6 +16,17 @@ node packages/cli/dist/bin.js doctor
 Requires **Node.js 22 or newer**. No API key is required to build, test, or contribute —
 and that is deliberate (see ADR-0005).
 
+> **One thing to know before your first `npm test`.** The session collector has a live-corpus
+> test that runs against **your own** `~/.claude` transcripts, if you have any. It samples
+> three projects, asserts nothing about their content, prints only counts and format drift,
+> and writes nothing anywhere. It skips entirely where there is no corpus, which includes CI.
+>
+> It exists because that source produced 14 schema versions in 30 days, and fixtures can only
+> prove the shapes we already know about. But a project that classifies those transcripts as
+> its most sensitive data should tell you it reads them **before** it does, rather than
+> leaving you to find out from a source comment. Set `CAREERFORGE_LIVE_CORPUS=1` for the full
+> sweep, or move `~/.claude` aside to skip it.
+
 ### Scripts
 
 | Command              | What it does                                   |

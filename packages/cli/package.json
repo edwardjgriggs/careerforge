@@ -2,7 +2,15 @@
   "name": "@careerforge/cli",
   "version": "0.2.0",
   "type": "module",
-  "description": "CareerForge command-line interface.",
+  "description": "CareerForge command-line interface: collect evidence of your work, group it into work units, generate claim-checked career assets, and gate everything that would leave your machine. Install `careerforge` instead unless you are depending on it programmatically.",
+  "keywords": [
+    "careerforge",
+    "resume",
+    "career",
+    "local-first",
+    "provenance",
+    "cli"
+  ],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

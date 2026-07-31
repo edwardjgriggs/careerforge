@@ -1,9 +1,14 @@
 # CareerForge — Vision
 
-**Status:** Draft for approval
+**Status:** Frozen. Changed only by an ADR that supersedes the relevant section.
 **Date:** 2026-07-30
-**Author:** Edward Griggs, with Lead Architect review
-**License (intended):** Apache License 2.0
+**Author:** Edward Griggs
+**License:** Apache License 2.0
+
+> This document defines **what** CareerForge is and **why**, and deliberately contains no
+> architecture. For how it works, see [Architecture.md](Architecture.md). For how a decision
+> here was changed, see [docs/adr/](adr/) — an ADR that contradicts this document supersedes
+> it, and this document is corrected to match.
 
 ---
 
@@ -514,12 +519,15 @@ Recorded so they are decided deliberately rather than by accident.
 
 1. ~~**Canonical storage.**~~ **RESOLVED 2026-07-30** — SQLite canonical, versioned JSON export durable, Markdown output only. See §12 and `docs/PreArchitecture-Findings.md` Part 2.
 2. ~~**Claude Session collector feasibility.**~~ **RESOLVED 2026-07-30** — Verified against 1,219 real sessions / 75,311 records / 328 MB. Viable and confirmed as the strongest differentiator: transcripts preserve the *problem statement, approach, and reasoning* that `git log` discards, mapping almost directly onto STAR. Approved for Proof of Thesis, renamed **AI Coding Session collector** (Claude Code is the first adapter, not the concept), with three mandatory constraints — tolerant parsing, Work Unit grouping, and maximum sensitivity classification. See `docs/PreArchitecture-Findings.md` Part 1.
+3. ~~**Repository placement.**~~ **RESOLVED 2026-07-31** — CareerForge lives in its own public repository. An organization is deferred until there is a second maintainer; moving a repository into one preserves history and redirects, so the cost of waiting is zero.
 
 ### Still open
 
-3. **Outcome-shaped evidence for non-developers.** A detection engineer's best work is a tuned rule that prevented an incident; a sysadmin's is a migration nobody noticed. Neither appears meaningfully in `git log`, and a calendar entry reading "Change Advisory Board" is noise. At least one collector must capture **outcome-shaped** rather than **activity-shaped** evidence, or half the stated v1 audience gets an empty app. *Unchanged by the investigation — the Proof of Thesis still proves the thesis only for developers.*
-4. **Redaction determinism.** "Deterministic redaction" is a strong promise. What is actually detectable without AI, and what residual risk is disclosed honestly? *Priority raised: session transcripts routinely contain pasted credentials, uncommitted file contents, client names, and production identifiers — a far more sensitive payload than originally assumed.*
-5. **Repository placement.** `projects/CareerForge/` currently sits inside the `ai-workspace` repository on branch `config-ablation-2026-07`. An open-source project with external contributors requires its own repository and organization before any public activity.
+**#4 is the most important unsolved problem in the project.** It is the gap between the
+audience this document names and the audience the shipped product actually serves.
+
+4. **Outcome-shaped evidence for non-developers.** A detection engineer's best work is a tuned rule that prevented an incident; a sysadmin's is a migration nobody noticed. Neither appears meaningfully in `git log`, and a calendar entry reading "Change Advisory Board" is noise. At least one collector must capture **outcome-shaped** rather than **activity-shaped** evidence, or half the stated v1 audience gets an empty app. *Unchanged by the investigation — the Proof of Thesis still proves the thesis only for developers.*
+5. **Redaction determinism.** "Deterministic redaction" is a strong promise. What is actually detectable without AI, and what residual risk is disclosed honestly? *Priority raised: session transcripts routinely contain pasted credentials, uncommitted file contents, client names, and production identifiers — a far more sensitive payload than originally assumed.*
 
 ### New architectural requirements produced by the investigation
 
@@ -542,8 +550,14 @@ Recorded so they are decided deliberately rather than by accident.
 
 ---
 
-## Approval
+## Status
 
-This document defines **what** CareerForge is and **why**. It deliberately contains no architecture: no schema, no module layout, no API surface, no technology decisions beyond the stated constraints.
+This document was approved on 2026-07-30 and is **frozen**. Architecture followed from it;
+implementation followed from that. Where implementation revealed a flaw, an
+[ADR](adr/) records the correction and this document was amended to match — see
+[ADR-0029](adr/0029-positioning-is-an-evidence-engine.md) for a worked example of exactly
+that happening.
 
-**Architecture work begins only after this vision is approved.**
+**If something here looks wrong to you, say so.** A decision that cannot survive scrutiny
+should not survive, and there is an [issue template](https://github.com/edwardjgriggs/careerforge/issues/new?template=challenge_a_decision.yml)
+for arguing with one.

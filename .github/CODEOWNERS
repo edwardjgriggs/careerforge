@@ -1,0 +1,25 @@
+# Governance is BDFL at this stage, so this file is currently one line of truth and
+# several lines of intent. It exists now so that the boundaries which matter are
+# already named when a second maintainer arrives.
+
+*                       @edwardjgriggs
+
+# The contracts that are expensive or impossible to change after 1.0. A change here is
+# a change to what users can rely on for years, not a refactor.
+/packages/domain/       @edwardjgriggs
+/packages/protocol/     @edwardjgriggs
+/packages/store/        @edwardjgriggs
+
+# The single egress choke point. Every outbound call in the product passes through this
+# package, and invariant I3 is only true for as long as that stays reviewed.
+/packages/policy/       @edwardjgriggs
+
+# Decisions, and the documents they are allowed to overturn.
+/docs/adr/              @edwardjgriggs
+/docs/Vision.md         @edwardjgriggs
+/docs/Architecture.md   @edwardjgriggs
+
+# Supply chain: what gets published, and what is allowed to run with credentials.
+/.github/workflows/     @edwardjgriggs
+/package.json           @edwardjgriggs
+/package-lock.json      @edwardjgriggs

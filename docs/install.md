@@ -20,15 +20,31 @@ careerforge tour
 `careerforge` is a four-line forwarder onto `@careerforge/cli`; installing
 either works, and the unscoped name exists because it is the one people type.
 
-Every package is published with [npm
-provenance](https://docs.npmjs.com/generating-provenance-statements), so the
-registry can show you which commit and which workflow run produced the tarball
-you just installed. You do not have to take our word for what is in it.
+## Verifying what you installed
+
+Releases are cut by [the release
+workflow](../.github/workflows/release.yml), which publishes with [npm
+provenance](https://docs.npmjs.com/generating-provenance-statements) — an
+attestation recording which commit, which repository, and which workflow run
+produced the tarball.
+
+Do not take that on trust. Check it:
+
+```bash
+npm view careerforge dist.attestations
+```
+
+**If that prints nothing, the version you have was not published through the
+pipeline and carries no attestation.** Treat it as unverified. A claim about
+provenance that you cannot check yourself is exactly the kind of claim this
+project exists to argue against, so the command is here rather than the
+reassurance.
 
 ## From a release, without a registry
 
-The releases page carries the same tarballs and a checksum file. Verify, then
-install the whole set at once — the packages depend on each other, so
+Tagged releases carry the same tarballs and a `SHA256SUMS` file on the
+[releases page](https://github.com/edwardjgriggs/careerforge/releases). Verify,
+then install the whole set at once — the packages depend on each other, so
 installing one of them alone will send npm looking for the rest:
 
 ```bash

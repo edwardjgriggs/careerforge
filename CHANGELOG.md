@@ -14,12 +14,9 @@ This file covers the repository. Each published package also carries its own gen
 
 ## [0.2.0] — 2026-07-31
 
-**The first public release.** There is no 0.1.0 on npm or on the releases page — the
-version was carried through thirteen milestones of development and bumped once on the way
-out the door, before anything had been published. Nothing is missing.
-
-Thirteen milestones, and a Proof of Thesis: that career assets can be generated from
-evidence with claim-level provenance, and that the refusals are the point.
+**The first public release.** Thirteen milestones of development, and a Proof of Thesis:
+that career assets can be generated from evidence with claim-level provenance, and that the
+refusals are the point. (0.1.0 was the in-development version and was never published.)
 
 ### Added
 

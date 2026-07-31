@@ -1,0 +1,61 @@
+name: Challenge a decision
+description: An ADR looks wrong to you. Say so — this is a contribution.
+labels: ['adr', 'discussion']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every architecture decision in this project carries a **"Revisit if"** section,
+        because a decision without stated falsification conditions is a belief, and
+        belief is how projects carry bad decisions for years past their expiry.
+
+        **A decision that cannot survive scrutiny should not survive.** Disagreement is
+        expressed by argument, not by rewriting history — if you are right, the outcome
+        is a new ADR that supersedes the old one and preserves both reasonings.
+
+  - type: input
+    id: adr
+    attributes:
+      label: Which ADR
+      placeholder: 'ADR-0003 — SQLite is canonical storage'
+    validations:
+      required: true
+
+  - type: textarea
+    id: read
+    attributes:
+      label: What the ADR says, in your words
+      description: >-
+        Including the alternatives it considered and rejected. This is here to make sure
+        the argument is against the decision that was actually made.
+    validations:
+      required: true
+
+  - type: textarea
+    id: wrong
+    attributes:
+      label: Why it is wrong
+      description: What it costs, who it costs, and under what conditions.
+    validations:
+      required: true
+
+  - type: textarea
+    id: revisit
+    attributes:
+      label: Does this meet its own "Revisit if" condition?
+      description: >-
+        Quote the condition. If your argument satisfies a condition the ADR itself set
+        for being overturned, it is very hard to dismiss.
+    validations:
+      required: true
+
+  - type: textarea
+    id: instead
+    attributes:
+      label: What should replace it
+      description: >-
+        And what that costs — including for people who already have evidence stored
+        under the current decision. User data compatibility outranks developer
+        convenience, every time.
+    validations:
+      required: true

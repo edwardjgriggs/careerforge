@@ -2,7 +2,14 @@
   "name": "@careerforge/domain",
   "version": "0.2.0",
   "type": "module",
-  "description": "Pure domain model: Evidence, WorkUnit, Provenance, Claim, Gap. No I/O, no AI.",
+  "description": "CareerForge domain model: Evidence, WorkUnit, Provenance, Claim, Gap. Pure — no I/O, no network, no AI SDK, and no visibility of Node's types. Dependency-free by construction.",
+  "keywords": [
+    "careerforge",
+    "evidence",
+    "provenance",
+    "domain-model",
+    "zero-dependencies"
+  ],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

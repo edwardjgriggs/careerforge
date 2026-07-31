@@ -2,7 +2,14 @@
   "name": "@careerforge/collect",
   "version": "0.2.0",
   "type": "module",
-  "description": "Collector host, cursors, and the collector conformance suite.",
+  "description": "CareerForge collector host, cursors, and the collector conformance suite. Import `describeConformance` to prove a third-party collector satisfies the contract without vendoring anything.",
+  "keywords": [
+    "careerforge",
+    "collector",
+    "plugin",
+    "conformance",
+    "contract-testing"
+  ],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
