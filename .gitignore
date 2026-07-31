@@ -1,6 +1,13 @@
 node_modules/
 dist/
 *.tsbuildinfo
+
+# Release artifacts. `npm pack --workspaces` drops tarballs wherever it is run,
+# and a published tarball committed to the tree is a second source of truth for
+# what shipped.
+*.tgz
+dist-release/
+
 coverage/
 .DS_Store
 Thumbs.db
