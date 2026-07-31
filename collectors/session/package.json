@@ -1,10 +1,19 @@
 {
   "name": "@careerforge/collector-session",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "AI Coding Session collector. Turns AI-assisted work sessions into Evidence. Claude Code is the first adapter.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edwardjgriggs/careerforge.git",
+    "directory": "collectors/session"
+  },
+  "homepage": "https://github.com/edwardjgriggs/careerforge#readme",
+  "bugs": "https://github.com/edwardjgriggs/careerforge/issues",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

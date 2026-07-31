@@ -222,6 +222,15 @@ export default tseslint.config(
     },
   },
 
+  // The unscoped `careerforge` package is a process entry point in plain
+  // JavaScript, for the same reason: it forwards argv and nothing else.
+  {
+    files: ['packages/careerforge/bin.js'],
+    languageOptions: {
+      globals: { process: 'readonly' },
+    },
+  },
+
   {
     files: ['**/*.test.ts', 'test/**/*.ts'],
     rules: {

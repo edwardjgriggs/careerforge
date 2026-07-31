@@ -1,10 +1,19 @@
 {
   "name": "@careerforge/ui",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Local web UI (Evidence Explorer).",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edwardjgriggs/careerforge.git",
+    "directory": "packages/ui"
+  },
+  "homepage": "https://github.com/edwardjgriggs/careerforge#readme",
+  "bugs": "https://github.com/edwardjgriggs/careerforge/issues",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

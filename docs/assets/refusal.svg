@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="573" height="698" viewBox="0 0 573 698" role="img" aria-label="careerforge generate resume-bullet: the model proposes four claims and three are refused for want of evidence, each naming the question that would change the answer">
+<title>CareerForge refuses three of four proposed claims</title>
+<style>
+text{font-family:ui-monospace,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono",monospace;font-size:14px}
+@keyframes r0{0%,1.76%{opacity:0}3.41%,100%{opacity:1}}
+.r0{animation:r0 17s linear infinite}
+@keyframes r2{0%,5.88%{opacity:0}7.53%,100%{opacity:1}}
+.r2{animation:r2 17s linear infinite}
+@keyframes r3{0%,6.76%{opacity:0}8.41%,100%{opacity:1}}
+.r3{animation:r3 17s linear infinite}
+@keyframes r5{0%,10.00%{opacity:0}11.65%,100%{opacity:1}}
+.r5{animation:r5 17s linear infinite}
+@keyframes r7{0%,13.53%{opacity:0}15.18%,100%{opacity:1}}
+.r7{animation:r7 17s linear infinite}
+@keyframes r9{0%,15.88%{opacity:0}17.53%,100%{opacity:1}}
+.r9{animation:r9 17s linear infinite}
+@keyframes r10{0%,16.76%{opacity:0}18.41%,100%{opacity:1}}
+.r10{animation:r10 17s linear infinite}
+@keyframes r12{0%,21.18%{opacity:0}22.82%,100%{opacity:1}}
+.r12{animation:r12 17s linear infinite}
+@keyframes r14{0%,24.71%{opacity:0}26.35%,100%{opacity:1}}
+.r14{animation:r14 17s linear infinite}
+@keyframes k14{0%,29.41%{transform:scaleX(0)}32.06%,100%{transform:scaleX(1)}}
+.k14{animation:k14 17s ease-out infinite;transform-origin:left center;transform-box:fill-box}
+@keyframes r15{0%,32.35%{opacity:0}34.00%,100%{opacity:1}}
+.r15{animation:r15 17s linear infinite}
+@keyframes r16{0%,33.06%{opacity:0}34.71%,100%{opacity:1}}
+.r16{animation:r16 17s linear infinite}
+@keyframes r17{0%,34.71%{opacity:0}36.35%,100%{opacity:1}}
+.r17{animation:r17 17s linear infinite}
+@keyframes r19{0%,38.82%{opacity:0}40.47%,100%{opacity:1}}
+.r19{animation:r19 17s linear infinite}
+@keyframes k19{0%,43.53%{transform:scaleX(0)}46.18%,100%{transform:scaleX(1)}}
+.k19{animation:k19 17s ease-out infinite;transform-origin:left center;transform-box:fill-box}
+@keyframes r20{0%,46.47%{opacity:0}48.12%,100%{opacity:1}}
+.r20{animation:r20 17s linear infinite}
+@keyframes r21{0%,47.18%{opacity:0}48.82%,100%{opacity:1}}
+.r21{animation:r21 17s linear infinite}
+@keyframes r22{0%,48.82%{opacity:0}50.47%,100%{opacity:1}}
+.r22{animation:r22 17s linear infinite}
+@keyframes r24{0%,52.94%{opacity:0}54.59%,100%{opacity:1}}
+.r24{animation:r24 17s linear infinite}
+@keyframes k24{0%,57.65%{transform:scaleX(0)}60.29%,100%{transform:scaleX(1)}}
+.k24{animation:k24 17s ease-out infinite;transform-origin:left center;transform-box:fill-box}
+@keyframes r25{0%,60.59%{opacity:0}62.24%,100%{opacity:1}}
+.r25{animation:r25 17s linear infinite}
+@keyframes r26{0%,61.29%{opacity:0}62.94%,100%{opacity:1}}
+.r26{animation:r26 17s linear infinite}
+@keyframes r27{0%,62.94%{opacity:0}64.59%,100%{opacity:1}}
+.r27{animation:r27 17s linear infinite}
+@keyframes r29{0%,67.65%{opacity:0}69.29%,100%{opacity:1}}
+.r29{animation:r29 17s linear infinite}
+@keyframes r30{0%,70.00%{opacity:0}71.65%,100%{opacity:1}}
+.r30{animation:r30 17s linear infinite}
+@keyframes cur{0%,1.7%{opacity:0}2%,3%{opacity:1}3.4%,4.4%{opacity:0}4.8%,5.8%{opacity:1}6.2%,100%{opacity:0}}
+.cur{animation:cur 17s steps(1,end) infinite}
+</style>
+<rect width="573" height="698" rx="10" fill="#0f1115"/>
+<rect width="573" height="30" rx="10" fill="#171a21"/>
+<rect y="20" width="573" height="10" fill="#171a21"/>
+<line x1="0" y1="30" x2="573" y2="30" stroke="#2a2f3a"/>
+<circle cx="19" cy="15" r="4.5" fill="#f7768e"/><circle cx="35" cy="15" r="4.5" fill="#e0af68"/><circle cx="51" cy="15" r="4.5" fill="#7ec699"/>
+<text x="287" y="19.5" text-anchor="middle" fill="#9aa3b2" font-size="11">careerforge</text>
+<text class="r0" y="52" xml:space="preserve"><tspan x="26.0" textLength="16.8" lengthAdjust="spacing" fill="#9aa3b2">$ </tspan><tspan x="42.8" textLength="285.6" lengthAdjust="spacing" fill="#e6e8ec">careerforge generate resume-bullet</tspan></text>
+<text class="r2" y="92" xml:space="preserve"><tspan x="26.0" textLength="512.4" lengthAdjust="spacing" fill="#9aa3b2">Work unit: Working out why the nightly export kept timing out</tspan></text>
+<text class="r3" y="112" xml:space="preserve"><tspan x="26.0" textLength="184.8" lengthAdjust="spacing" fill="#9aa3b2">Reading:   6 record(s)</tspan></text>
+<text class="r5" y="152" xml:space="preserve"><tspan x="26.0" textLength="403.2" lengthAdjust="spacing" fill="#e6e8ec">Rebuilt the nightly export to run incrementally.</tspan></text>
+<text class="r7" y="192" xml:space="preserve"><tspan x="26.0" textLength="386.4" lengthAdjust="spacing" fill="#9aa3b2">Every part of that, and what stands behind it:</tspan></text>
+<text class="r9" y="232" xml:space="preserve"><tspan x="26.0" textLength="92.4" lengthAdjust="spacing" fill="#7ec699">  action   </tspan><tspan x="118.4" textLength="394.8" lengthAdjust="spacing" fill="#e6e8ec">Rebuilt the nightly export to run incrementally</tspan></text>
+<text class="r10" y="252" xml:space="preserve"><tspan x="26.0" textLength="520.8" lengthAdjust="spacing" fill="#9aa3b2">           cites 3 records, from git and from a coding session</tspan></text>
+<text class="r12" y="292" xml:space="preserve"><tspan x="26.0" textLength="75.6" lengthAdjust="spacing" fill="#e0af68">Left out </tspan><tspan x="101.6" textLength="294.0" lengthAdjust="spacing" fill="#9aa3b2">- the evidence does not carry them:</tspan></text>
+<text class="r14" y="332" xml:space="preserve"><tspan x="26.0" textLength="92.4" lengthAdjust="spacing" fill="#f7768e">  role     </tspan><tspan x="118.4" textLength="344.4" lengthAdjust="spacing" fill="#e6e8ec">&quot;led the redesign of the export pipeline&quot;</tspan></text>
+<rect class="k14" x="118.4" y="328.0" width="344.4" height="1.6" fill="#f7768e"/>
+<text class="r15" y="352" xml:space="preserve"><tspan x="26.0" textLength="495.6" lengthAdjust="spacing" fill="#9aa3b2">           Leadership and responsibility cannot be inferred</tspan></text>
+<text class="r16" y="372" xml:space="preserve"><tspan x="26.0" textLength="210.0" lengthAdjust="spacing" fill="#9aa3b2">           from activity.</tspan></text>
+<text class="r17" y="392" xml:space="preserve"><tspan x="26.0" textLength="420.0" lengthAdjust="spacing" fill="#7aa2f7">           -&gt; What was your role? Did you lead it?</tspan></text>
+<text class="r19" y="432" xml:space="preserve"><tspan x="26.0" textLength="92.4" lengthAdjust="spacing" fill="#f7768e">  metric   </tspan><tspan x="118.4" textLength="235.2" lengthAdjust="spacing" fill="#e6e8ec">&quot;cutting export time by 80%&quot;</tspan></text>
+<rect class="k19" x="118.4" y="428.0" width="235.2" height="1.6" fill="#f7768e"/>
+<text class="r20" y="452" xml:space="preserve"><tspan x="26.0" textLength="520.8" lengthAdjust="spacing" fill="#9aa3b2">           Numbers must be computed from evidence or confirmed</tspan></text>
+<text class="r21" y="472" xml:space="preserve"><tspan x="26.0" textLength="512.4" lengthAdjust="spacing" fill="#9aa3b2">           by you. CareerForge will ask rather than estimate.</tspan></text>
+<text class="r22" y="492" xml:space="preserve"><tspan x="26.0" textLength="470.4" lengthAdjust="spacing" fill="#7aa2f7">           -&gt; Did this work produce a measurable result?</tspan></text>
+<text class="r24" y="532" xml:space="preserve"><tspan x="26.0" textLength="92.4" lengthAdjust="spacing" fill="#f7768e">  outcome  </tspan><tspan x="118.4" textLength="336.0" lengthAdjust="spacing" fill="#e6e8ec">&quot;eliminating the nightly timeout alerts&quot;</tspan></text>
+<rect class="k24" x="118.4" y="528.0" width="336.0" height="1.6" fill="#f7768e"/>
+<text class="r25" y="552" xml:space="preserve"><tspan x="26.0" textLength="520.8" lengthAdjust="spacing" fill="#9aa3b2">           The evidence records the work, not what came of it.</tspan></text>
+<text class="r26" y="572" xml:space="preserve"><tspan x="26.0" textLength="478.8" lengthAdjust="spacing" fill="#9aa3b2">           An outcome has to be observed, never inferred.</tspan></text>
+<text class="r27" y="592" xml:space="preserve"><tspan x="26.0" textLength="512.4" lengthAdjust="spacing" fill="#7aa2f7">           -&gt; What actually changed as a result of this work?</tspan></text>
+<text class="r29" y="632" xml:space="preserve"><tspan x="26.0" textLength="193.2" lengthAdjust="spacing" fill="#7ec699">Evidence: corroborated </tspan><tspan x="219.2" textLength="235.2" lengthAdjust="spacing" fill="#9aa3b2">- 3 records from 2 source(s)</tspan></text>
+<text class="r30" y="652" xml:space="preserve"><tspan x="26.0" textLength="462.0" lengthAdjust="spacing" fill="#e0af68">  Left out for want of evidence: metric, outcome, role.</tspan></text>
+<rect class="cur" x="328.4" y="41.0" width="8" height="15" fill="#7aa2f7"/>
+</svg>

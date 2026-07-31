@@ -47,6 +47,20 @@ jobs:
           name: careerforge-release
           path: dist-release/
 
+      # Install what was just packed, with the network switched off, and walk
+      # the tour with it. This is the check that would have caught the release
+      # artifacts being unusable: every package resolving from the tarballs
+      # rather than from a registry proves the dependency set is complete, and
+      # the tour proves the thing a stranger runs first actually runs.
+      - name: Install the artifacts offline and walk the tour
+        run: |
+          npm install -g --offline --prefix "$RUNNER_TEMP/pfx" dist-release/*.tgz
+          "$RUNNER_TEMP/pfx/bin/careerforge" --version
+          "$RUNNER_TEMP/pfx/bin/careerforge" tour --no-pause
+        env:
+          CAREERFORGE_HOME: ${{ runner.temp }}/release-tour-home
+          OPENAI_API_KEY: ''
+
       - name: Publish the release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
@@ -62,3 +76,35 @@ jobs:
             Verify your download:
 
                 sha256sum -c SHA256SUMS
+
+  # Publishing is a separate job so that a registry credential problem cannot
+  # leave a half-published set behind a green release, and so the packing job
+  # stays runnable by anyone without secrets.
+  publish:
+    name: publish to npm
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Provenance. npm records which workflow, which commit, and which
+      # repository produced each tarball, and anyone can verify it after the
+      # fact. A tool that asks people to let it read their commit history and
+      # their coding transcripts should be able to prove what it shipped came
+      # from the source they can read.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Publish
+        run: npm publish --workspaces --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

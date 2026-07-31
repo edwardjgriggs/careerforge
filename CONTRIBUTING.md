@@ -32,8 +32,8 @@ and that is deliberate (see ADR-0005).
 
 Three documents explain why CareerForge is built the way it is:
 
-- **[Vision.md](Vision.md)** — what the product is and is not. **Frozen.**
-- **[Architecture.md](Architecture.md)** — how it works. **Frozen.**
+- **[docs/Vision.md](docs/Vision.md)** — what the product is and is not. **Frozen.**
+- **[docs/Architecture.md](docs/Architecture.md)** — how it works. **Frozen.**
 - **[docs/adr/](docs/adr/)** — why each major decision was made, and what would change it.
 
 If a design choice looks wrong, there is very likely an ADR explaining it — including the
@@ -100,7 +100,7 @@ Once the plugin protocol lands, a collector can be written in **any language** t
 JSON-RPC over stdio. See ADR-0008.
 
 Most integrations belong in their own repository rather than in-tree; the core stays
-deliberately small. See `Vision.md` §10 for the tier system.
+deliberately small. See [docs/Vision.md](docs/Vision.md) §10 for the tier system.
 
 ## Reporting bugs
 

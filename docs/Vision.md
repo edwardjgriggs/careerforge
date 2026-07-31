@@ -9,13 +9,13 @@
 
 ## 1. What CareerForge Is
 
-CareerForge is an **AI-powered Career Intelligence Platform**.
-
-It automatically collects evidence of a person's work, enriches that evidence with AI, and transforms it into career assets: resume bullets, STAR stories, portfolio entries, interview answers, performance review material, and career analytics.
-
-The one-sentence version:
+CareerForge is a **local-first evidence engine for professional work**.
 
 > **CareerForge is an Evidence Engine. Career assets are generated views of your evidence, not documents you write.**
+
+It automatically collects evidence of a person's work, optionally enriches that evidence with AI, and transforms it into career assets: resume bullets, STAR stories, portfolio entries, interview answers, performance review material, and career analytics. It refuses to assert anything the evidence cannot support, and says what would change the answer.
+
+*Corrected by [ADR-0029](adr/0029-positioning-is-an-evidence-engine.md), which retired the previous description ("an AI-powered Career Intelligence Platform") as indistinguishable from the products this project exists to argue against — and as contradicting ADR-0005, under which AI is additive rather than load-bearing.*
 
 ### What CareerForge Is Not
 

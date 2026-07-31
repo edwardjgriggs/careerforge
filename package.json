@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "CareerForge \u2014 an AI-powered Career Intelligence Platform. Local-first, privacy-first, evidence-backed.",
+  "description": "CareerForge - a local-first evidence engine for professional work. It collects what you actually did, and refuses to claim anything the evidence cannot support.",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=22.0.0"

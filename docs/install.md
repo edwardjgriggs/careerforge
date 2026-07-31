@@ -10,17 +10,35 @@ CareerForge is developed on Windows and tested on Windows, macOS, and Linux on
 every commit. Windows is a first-class matrix entry rather than something added
 after a bug report.
 
-## From a release
+## From npm
 
-Download the artifacts and their checksums from the releases page, then verify
-before running anything:
+```bash
+npm install -g careerforge
+careerforge tour
+```
+
+`careerforge` is a four-line forwarder onto `@careerforge/cli`; installing
+either works, and the unscoped name exists because it is the one people type.
+
+Every package is published with [npm
+provenance](https://docs.npmjs.com/generating-provenance-statements), so the
+registry can show you which commit and which workflow run produced the tarball
+you just installed. You do not have to take our word for what is in it.
+
+## From a release, without a registry
+
+The releases page carries the same tarballs and a checksum file. Verify, then
+install the whole set at once — the packages depend on each other, so
+installing one of them alone will send npm looking for the rest:
 
 ```bash
 sha256sum -c SHA256SUMS
-npm install -g ./careerforge-cli-0.1.0.tgz
+npm install -g --offline ./*.tgz
 ```
 
-A download nobody can verify is a download nobody should run.
+`--offline` is the point rather than a convenience: if it succeeds, nothing was
+fetched, and what you verified is exactly what you installed. A download nobody
+can verify is a download nobody should run.
 
 ## From source
 

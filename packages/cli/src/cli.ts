@@ -345,7 +345,7 @@ function usage(): string {
     .map(([name, spec]) => `  ${name.padEnd(width)}   ${spec.summary}`)
     .join('\n');
 
-  return `CareerForge - an AI-powered Career Intelligence Platform
+  return `CareerForge - a local-first evidence engine for your work history
 
 Usage:
   careerforge <command> [options]

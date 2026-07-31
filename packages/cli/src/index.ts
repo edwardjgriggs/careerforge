@@ -11,6 +11,7 @@
 export const PACKAGE_NAME = '@careerforge/cli' as const;
 
 export { run, COMMAND_NAMES, type CliResult } from './cli.js';
+export { main } from './main.js';
 export * from './commands.js';
 export {
   runChecks,

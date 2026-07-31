@@ -1,0 +1,38 @@
+{
+  "name": "careerforge",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "CareerForge - a local-first evidence engine for your work history. Every generated claim cites the evidence behind it, and unsupported claims are refused rather than softened.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edwardjgriggs/careerforge.git",
+    "directory": "packages/careerforge"
+  },
+  "homepage": "https://github.com/edwardjgriggs/careerforge#readme",
+  "bugs": "https://github.com/edwardjgriggs/careerforge/issues",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "keywords": [
+    "local-first",
+    "provenance",
+    "privacy",
+    "evidence",
+    "career",
+    "resume",
+    "cli"
+  ],
+  "files": [
+    "bin.js"
+  ],
+  "bin": {
+    "careerforge": "./bin.js"
+  },
+  "dependencies": {
+    "@careerforge/cli": "0.1.0"
+  }
+}
