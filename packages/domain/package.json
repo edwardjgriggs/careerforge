@@ -27,5 +27,8 @@
   ],
   "scripts": {
     "build": "tsc --build"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.31.1"
   }
 }
