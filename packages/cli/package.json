@@ -1,6 +1,6 @@
 {
   "name": "@careerforge/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "CareerForge command-line interface: collect evidence of your work, group it into work units, generate claim-checked career assets, and gate everything that would leave your machine. Install `careerforge` instead unless you are depending on it programmatically.",
   "keywords": [
@@ -37,15 +37,15 @@
     "dist"
   ],
   "dependencies": {
-    "@careerforge/collect": "0.2.0",
-    "@careerforge/collector-git": "0.2.0",
-    "@careerforge/collector-session": "0.2.0",
-    "@careerforge/domain": "0.2.0",
-    "@careerforge/enrich": "0.2.0",
-    "@careerforge/generate": "0.2.0",
-    "@careerforge/policy": "0.2.0",
-    "@careerforge/store": "0.2.0",
-    "@careerforge/ui": "0.2.0"
+    "@careerforge/collect": "0.2.1",
+    "@careerforge/collector-git": "0.2.1",
+    "@careerforge/collector-session": "0.2.1",
+    "@careerforge/domain": "0.2.1",
+    "@careerforge/enrich": "0.2.1",
+    "@careerforge/generate": "0.2.1",
+    "@careerforge/policy": "0.2.1",
+    "@careerforge/store": "0.2.1",
+    "@careerforge/ui": "0.2.1"
   },
   "scripts": {
     "build": "tsc --build"

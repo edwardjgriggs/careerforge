@@ -1,6 +1,6 @@
 {
   "name": "@careerforge/collect",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "CareerForge collector host, cursors, and the collector conformance suite. Import `describeConformance` to prove a third-party collector satisfies the contract without vendoring anything.",
   "keywords": [
@@ -33,9 +33,9 @@
     "dist"
   ],
   "dependencies": {
-    "@careerforge/domain": "0.2.0",
-    "@careerforge/protocol": "0.2.0",
-    "@careerforge/store": "0.2.0"
+    "@careerforge/domain": "0.2.1",
+    "@careerforge/protocol": "0.2.1",
+    "@careerforge/store": "0.2.1"
   },
   "scripts": {
     "build": "tsc --build"

@@ -365,7 +365,7 @@ without being permitted to send your evidence anywhere.
 
 ---
 
-## Status: 0.2.0, and honest about it
+## Status: 0.2.1, and honest about it
 
 **Working today:** collection from Git and AI coding sessions, grouping into units of work,
 generation with every claim checked, the interview, the provenance graph, the egress gate,

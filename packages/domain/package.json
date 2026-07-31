@@ -1,6 +1,6 @@
 {
   "name": "@careerforge/domain",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "CareerForge domain model: Evidence, WorkUnit, Provenance, Claim, Gap. Pure — no I/O, no network, no AI SDK, and no visibility of Node's types. Dependency-free by construction.",
   "keywords": [

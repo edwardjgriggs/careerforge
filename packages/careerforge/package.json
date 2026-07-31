@@ -1,6 +1,6 @@
 {
   "name": "careerforge",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Local-first evidence engine for your work history. Turns your Git commits and AI coding sessions into resume bullets, STAR stories, and interview answers where every claim cites the records behind it — and unsupported claims are refused rather than softened. No account, no telemetry, no API key required.",
   "license": "Apache-2.0",
@@ -50,6 +50,6 @@
     "careerforge": "./bin.js"
   },
   "dependencies": {
-    "@careerforge/cli": "0.2.0"
+    "@careerforge/cli": "0.2.1"
   }
 }

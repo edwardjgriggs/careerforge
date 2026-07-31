@@ -1,6 +1,6 @@
 {
   "name": "@careerforge/store",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "SQLite adapter, migrations, export, and rebuild.",
   "license": "Apache-2.0",
@@ -26,10 +26,10 @@
     "dist"
   ],
   "dependencies": {
-    "@careerforge/domain": "0.2.0",
-    "@careerforge/enrich": "0.2.0",
-    "@careerforge/generate": "0.2.0",
-    "@careerforge/policy": "0.2.0",
+    "@careerforge/domain": "0.2.1",
+    "@careerforge/enrich": "0.2.1",
+    "@careerforge/generate": "0.2.1",
+    "@careerforge/policy": "0.2.1",
     "better-sqlite3": "^12.11.1"
   },
   "scripts": {
