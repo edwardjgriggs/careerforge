@@ -22,6 +22,21 @@ updates:
       prefix: 'deps'
       prefix-development: 'deps(dev)'
     labels: ['dependencies']
+    # Both of these were proposed, tested by CI, and refused on the evidence.
+    # They are recorded here with the reason so that the next person — or the
+    # next version of me — does not spend an afternoon rediscovering it.
+    ignore:
+      # 13.x ships no prebuilt binary for Windows, so npm falls back to
+      # `node-gyp rebuild` and the verify job fails on the platform this
+      # project claims as first-class. Held at 12.x deliberately. Revisit when
+      # 13.x publishes a win32-x64 prebuild.
+      - dependency-name: better-sqlite3
+        versions: ['13.x']
+      # typescript-eslint 8.x peer-depends on a TypeScript range that 7.x is
+      # outside, so `npm ci` fails ERESOLVE before a single test runs. Revisit
+      # when typescript-eslint supports TypeScript 7.
+      - dependency-name: typescript
+        versions: ['7.x']
 
   - package-ecosystem: github-actions
     directory: '/'
