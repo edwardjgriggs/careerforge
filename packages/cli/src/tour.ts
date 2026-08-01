@@ -235,7 +235,7 @@ const STEPS: readonly Step[] = [
       say(quote(group(context.env, { dryRun: false })));
       say('');
 
-      const listed = units(context.env, { limit: 5 });
+      const listed = units(context.env, { limit: 5, json: false });
       say(quote(listed));
       say('');
       say('Six artifacts became one unit of work — the size a person actually describes work at.');
