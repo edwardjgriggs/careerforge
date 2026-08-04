@@ -1,5 +1,20 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import n from 'eslint-plugin-n';
+
+/**
+ * The declared runtime floor, read from the manifest rather than repeated here.
+ * ADR-0014 set it at 22 and the CI matrix tests it; this is the third place it
+ * would otherwise have to be kept in step by hand.
+ *
+ * `import.meta.dirname` rather than `new URL(...)`: this config file is linted
+ * by its own rules, and `URL` is not among the globals declared for it.
+ */
+const NODE_FLOOR = JSON.parse(readFileSync(join(import.meta.dirname, 'package.json'), 'utf8'))
+  .engines.node;
 
 /**
  * Architectural boundaries, enforced by lint rather than by review.
@@ -86,6 +101,28 @@ export default tseslint.config(
       ],
       eqeqeq: ['error', 'always', { null: 'ignore' }],
       'no-console': 'off',
+    },
+  },
+
+  // ── The Node floor ──────────────────────────────────────────────────────
+  // `@types/node` carries no notion of which Node version is being targeted.
+  // It describes the newest runtime, so `fs.glob` or `util.styleText` typecheck
+  // clean and then throw on 22 — the version the README promises and the one
+  // most users will actually have. The CI matrix would catch it only if a test
+  // happened to exercise that line.
+  //
+  // This rule reads the floor and fails the build instead. It is the same
+  // argument as the invariants below: a promise the build enforces is worth
+  // more than a promise a reviewer has to remember.
+  //
+  // Only `node-builtins` is enabled. `es-builtins` and `es-syntax` cover ground
+  // that `lib: ["ES2023"]` in tsconfig.base.json already refuses.
+  {
+    files: ['packages/**/*.ts', 'collectors/**/*.ts'],
+    plugins: { n },
+    settings: { n: { version: NODE_FLOOR } },
+    rules: {
+      'n/no-unsupported-features/node-builtins': 'error',
     },
   },
 
