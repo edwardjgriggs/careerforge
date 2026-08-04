@@ -26,18 +26,26 @@ updates:
     # They are recorded here with the reason so that the next person — or the
     # next version of me — does not spend an afternoon rediscovering it.
     ignore:
-      # 13.x does ship a Windows prebuilt binary — bundled in the tarball as
-      # prebuilds/win32-x64.node, Node-API, one per platform instead of one per
-      # ABI. Nothing needs compiling. The trouble is that 13.x still ships
-      # binding.gyp while no longer defining an install script, and npm's
-      # documented default for that combination is to run `node-gyp rebuild`
-      # anyway. On node 24 npm 11's allow-scripts gate declines to run it and
-      # the bundled prebuild is used; on node 22 npm 10 has no such gate, runs
-      # it, and node-gyp 11.5.0 cannot parse the runner's Visual Studio 18.
-      # Held at 12.x deliberately. Not worked around in CI on purpose: the same
-      # implicit build runs for anyone installing this on Windows with npm 10,
-      # so a green verify job would only be hiding it. Revisit when upstream
-      # sets "gypfile": false or restores a no-op install script.
+      # Retested at 13.0.2 in PR #24 and still red on windows/node 22. The cause
+      # is npm, not this package. 13.x bundles prebuilds/win32-x64.node and sets
+      # "gypfile": false, which is exactly the field that should stop npm running
+      # node-gyp for a package containing binding.gyp. npm ignores it -
+      # npm/cli#3341, open since 2021. So npm attempts a source build for a
+      # package that already contains the binary it would produce, and on node 22
+      # (npm 10) that build reaches node-gyp 11.5.0, which cannot parse the
+      # runner's Visual Studio 18. node 24 escapes only because npm 11's
+      # allow-scripts gate declines the implicit script.
+      #
+      # Held at 12.x deliberately, and not worked around in CI on purpose: the
+      # same implicit build runs for anyone installing on Windows with npm 10, so
+      # a green verify job would be hiding a break rather than proving it absent.
+      #
+      # Beware the false positive that got PR #24 merged: `npm install` over an
+      # existing node_modules succeeds without invoking node-gyp. Only a clean
+      # install tells the truth, and that is what users and CI perform.
+      #
+      # Revisit when npm fixes npm/cli#3341, or when the Node floor reaches a
+      # version whose bundled npm is 11+. Nothing upstream remains to be done.
       - dependency-name: better-sqlite3
         versions: ['13.x']
       # typescript-eslint 8.x peer-depends on a TypeScript range that 7.x is

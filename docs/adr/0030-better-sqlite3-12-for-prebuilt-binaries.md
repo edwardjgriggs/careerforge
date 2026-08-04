@@ -182,3 +182,48 @@ prebuilds" describes something that will not happen and would not matter if it
 did. The real trigger is upstream setting `"gypfile": false` or restoring a
 no-op `install` script, either of which stops npm attempting the build. The hold
 in `.github/dependabot.yml` now carries this reasoning rather than the original.
+
+### Addendum, later the same day
+
+**Supersedes the two paragraphs above beginning "The trigger is a packaging
+mistake" and "The first 'Revisit if' trigger needs restating".** They were
+written before the version was actually retested. The decision is unchanged for
+the third time; only the cause moves.
+
+The retest is PR #24. `verify (windows-latest, node 22)` went red exactly as
+before, so the conclusion holds — but not for the reason given above.
+
+**Upstream has already done the thing that correction asked for.** 13.0.2 sets
+`"gypfile": false`. Registry manifest, checked 2026-08-04:
+
+| Version | `gypfile` | injected `install` |
+| ------- | --------- | ------------------ |
+| 12.11.1 | —         | `prebuild-install \|\| node-gyp rebuild --release` |
+| 13.0.0  | `true`    | `node-gyp rebuild` |
+| 13.0.1  | `true`    | `node-gyp rebuild` |
+| 13.0.2  | `false`   | none |
+
+The lockfile agrees: the entry for 13.0.2 carries no `hasInstallScript`. The
+mechanism is npm *injecting* the install script into the registry manifest at
+publish time when it sees a `binding.gyp` and no install script — not the
+tarball, which is why inspecting the tarball shows nothing and misleads.
+
+**npm does not honour the field.** It runs `node-gyp rebuild` regardless. That
+is [npm/cli#3341](https://github.com/npm/cli/issues/3341), *"gypfile:false no
+more honored"*, open since 2021-06-01. Also
+[npm/cli#9837](https://github.com/npm/cli/issues/9837), filed 2026-08-03 against
+this exact version, and [npm/cli#8714](https://github.com/npm/cli/issues/8714).
+
+**One trap worth recording.** On Windows, node 22.23.1, npm 10.9.8: a clean
+`npm ci` fails, a clean `npm install` fails, and an `npm install` on top of an
+existing `node_modules` **succeeds without invoking node-gyp**. The incremental
+path takes different code and quietly works, so 13.0.2 looks fine on a developer
+machine that already had the package and breaks for every user and every CI run.
+That false positive is what got PR #24 opened and merged before the matrix
+reported.
+
+**The corrected revisit trigger.** Nothing upstream remains to be done. The hold
+lifts when npm fixes #3341, or when the Node floor reaches a version whose
+bundled npm is 11 or newer — where `allow-scripts` declines the implicit script
+and the bundled prebuild is used. That is precisely why `windows-latest, node
+24` passes in the same matrix run where `node 22` fails.
