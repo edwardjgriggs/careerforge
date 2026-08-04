@@ -146,3 +146,39 @@ milestone. This decision is what makes it possible to launch before doing it.
   force either the migration above or the prebuild matrix rejected above.
 - A user reports an install that compiled from source anyway, which would mean
   the prebuild coverage is narrower than the release assets suggest.
+
+## Correction — 2026-08-04
+
+**The decision stands. The mechanism described above is wrong in a way worth
+fixing, because the "Revisit if" triggers are written against it.**
+
+Dependabot proposed 13.0.2 again as PR #23, the Windows job failed again, and
+investigating it properly turned up three errors.
+
+**13.x does ship a Windows binary.** It is `prebuilds/win32-x64.node`, bundled
+inside the npm tarball — Node-API, one binary per platform rather than one per
+ABI, which is the whole point of the move. The table of zero release assets is
+accurate and measures the wrong thing: 13.x stopped publishing GitHub release
+assets when it stopped using `prebuild-install`. Nothing needs compiling.
+
+**The trigger is a packaging mistake, not a missing binary.** 13.x still ships
+`binding.gyp` while no longer defining an `install` script, and npm's documented
+default for exactly that pair is to run `node-gyp rebuild`. npm attempts a
+source build for a package that already contains the binary it would produce.
+
+**"Every install compiles, on every platform, for every user" is too strong.**
+npm 11 gates implicit install scripts behind `allow-scripts`; it declines to run
+this one, warns, and uses the bundled prebuild. That is why `windows-latest,
+node 24` passed while `node 22` failed in the same run — node 24 ships npm 11,
+node 22 ships npm 10. The failure requires npm 10 *and* Windows *and* a runner
+image whose Visual Studio 18 `node-gyp@11.5.0` cannot identify.
+
+**Why the decision is unaffected.** Node 22 is the floor, npm 10 is what ships
+with it, and a Windows user on the floor still meets a compile they cannot
+complete. The audience being protected is unchanged, and still excluded.
+
+**The first "Revisit if" trigger needs restating.** "13.x resumes publishing
+prebuilds" describes something that will not happen and would not matter if it
+did. The real trigger is upstream setting `"gypfile": false` or restoring a
+no-op `install` script, either of which stops npm attempting the build. The hold
+in `.github/dependabot.yml` now carries this reasoning rather than the original.
