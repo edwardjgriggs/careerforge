@@ -10,16 +10,35 @@ import {
   type EditKind,
   type EvidenceAssessment,
   type EvidenceGrade,
+  type GapType,
   type Instant,
   type Platform,
   type ReviewState,
   type SupportingRecord,
   type UlidFactory,
 } from '@careerforge/domain';
-import type { GeneratedBullet } from '@careerforge/generate';
 
 import type { Db } from './migrations/index.js';
 import { ProvenanceStore } from './provenance-store.js';
+
+/** Minimal generator output accepted by the persistence boundary. */
+export interface GeneratedAssetDraft {
+  readonly text: string;
+  readonly claims: readonly {
+    readonly text: string;
+    readonly claimType: ClaimType;
+    readonly span: readonly [number, number];
+    readonly evidence: readonly string[];
+    readonly corroboratingIds: readonly string[];
+  }[];
+  readonly dropped: readonly {
+    readonly text: string;
+    readonly reason: string;
+    readonly gapType: GapType;
+    readonly question: string;
+  }[];
+  readonly assessment: EvidenceAssessment;
+}
 
 /**
  * Where generated assets and their claims are recorded.
@@ -41,7 +60,7 @@ export interface RecordAssetInput {
   readonly assetType: AssetType;
   readonly workUnitId: string;
   readonly runId: string | null;
-  readonly bullet: GeneratedBullet;
+  readonly bullet: GeneratedAssetDraft;
   /** The asset this one replaces, when regenerating or editing. */
   readonly supersedes?: string;
   readonly editedBy?: 'user';
@@ -218,7 +237,7 @@ export class AssetStore {
    * sentence came out empty would throw away the only useful thing that
    * happened.
    */
-  raiseQuestionsOnly(workUnitId: string, bullet: GeneratedBullet): readonly string[] {
+  raiseQuestionsOnly(workUnitId: string, bullet: GeneratedAssetDraft): readonly string[] {
     const gapIds: string[] = [];
     this.db.transaction(() => {
       for (const dropped of bullet.dropped) {
@@ -284,6 +303,36 @@ export class AssetStore {
       )
       .all(workUnitId) as AssetRow[];
     return rows.map(toAsset);
+  }
+
+  /** Current assets for a bounded page of work units, read in one query. */
+  forWorkUnits(workUnitIds: readonly string[], limit = 100): readonly StoredAsset[] {
+    if (workUnitIds.length === 0) return [];
+    const placeholders = workUnitIds.map(() => '?').join(',');
+    const rows = this.db
+      .prepare(
+        `SELECT a.* FROM assets a
+         WHERE a.work_unit_id IN (${placeholders})
+           AND NOT EXISTS (SELECT 1 FROM assets s WHERE s.supersedes = a.id)
+         ORDER BY a.id DESC LIMIT ?`,
+      )
+      .all(...workUnitIds, Math.max(1, Math.trunc(limit))) as AssetRow[];
+    return rows.map(toAsset);
+  }
+
+  /** Current asset counts for a page of units in one query. */
+  countsForWorkUnits(workUnitIds: readonly string[]): ReadonlyMap<string, number> {
+    if (workUnitIds.length === 0) return new Map();
+    const placeholders = workUnitIds.map(() => '?').join(',');
+    const rows = this.db
+      .prepare(
+        `SELECT a.work_unit_id, COUNT(*) AS n FROM assets a
+         WHERE a.work_unit_id IN (${placeholders})
+           AND NOT EXISTS (SELECT 1 FROM assets s WHERE s.supersedes = a.id)
+         GROUP BY a.work_unit_id`,
+      )
+      .all(...workUnitIds) as { work_unit_id: string; n: number }[];
+    return new Map(rows.map((row) => [row.work_unit_id, row.n]));
   }
 
   /**

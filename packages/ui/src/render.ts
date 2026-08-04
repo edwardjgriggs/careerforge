@@ -68,10 +68,11 @@ export function renderStatement(asset: AssetView): string {
     const [start, end] = claim.span;
     if (start > cursor) html += escapeHtml(asset.text.slice(cursor, start));
     html +=
-      `<span class="claim" data-claim="${attr(claim.id)}" role="button" tabindex="0" ` +
+      `<button type="button" class="claim" data-claim="${attr(claim.id)}" ` +
+      `aria-pressed="false" aria-controls="proof-${attr(claim.id)}" ` +
       `aria-label="${attr(`${claim.claimType} claim: ${claim.text}`)}">` +
       `${escapeHtml(asset.text.slice(start, end))}` +
-      `<sup class="claim-type">${escapeHtml(claim.claimType)}</sup></span>`;
+      `<sup class="claim-type">${escapeHtml(claim.claimType)}</sup></button>`;
     cursor = end;
   }
 
@@ -110,7 +111,7 @@ export function renderClaimProof(claim: ClaimView): string {
       : `<p class="withheld">${claim.withheld} record(s) behind this have been hidden or withdrawn. They are counted, not shown.</p>`;
 
   return `
-    <section class="proof" data-proof="${attr(claim.id)}">
+    <section class="proof" id="proof-${attr(claim.id)}" data-proof="${attr(claim.id)}">
       <h3>Why CareerForge believes this</h3>
       <!-- Every claim's proof renders; selecting one brings it forward rather
            than revealing it, so the whole warrant is readable at a glance. -->
@@ -176,7 +177,7 @@ export function renderAssessment(
  * indication of what any of them is worth, is a to-do list rather than an
  * explanation.
  */
-export function renderImprovements(improvements: readonly Improvement[]): string {
+export function renderImprovements(improvements: readonly Improvement[], idPrefix = ''): string {
   if (improvements.length === 0) {
     return `
       <section class="improve">
@@ -195,12 +196,18 @@ export function renderImprovements(improvements: readonly Improvement[]): string
           : `<span class="effect neutral">no change to the grade</span>`;
 
       const action = improvement.action;
+      const answerId =
+        action.kind === 'answer'
+          ? `answer-${idPrefix === '' ? '' : `${idPrefix}-`}${action.gapId}`
+          : '';
+      const statusId = answerId === '' ? '' : `status-${answerId}`;
       const control =
         action.kind === 'answer'
           ? `<form class="answer" data-gap="${attr(action.gapId)}">
-               <label>${escapeHtml(action.question)}</label>
-               <textarea name="answer" rows="2" placeholder="In your own words…"></textarea>
+               <label for="${attr(answerId)}">${escapeHtml(action.question)}</label>
+               <textarea id="${attr(answerId)}" name="answer" rows="2" maxlength="8000" placeholder="In your own words…" aria-describedby="${attr(statusId)}"></textarea>
                <button type="submit">Record this as evidence</button>
+               <p id="${attr(statusId)}" class="recorded form-status" role="status" aria-live="polite"></p>
              </form>`
           : action.kind === 'ask'
             ? `<p class="hint">${escapeHtml(action.question)}</p>
@@ -234,14 +241,14 @@ export function renderAsset(asset: AssetView): string {
   return `
     <article class="asset" data-asset="${attr(asset.id)}">
       <header>
-        <p class="unit">${escapeHtml(asset.workUnitTitle)}</p>
+        <h2 class="unit">${escapeHtml(asset.workUnitTitle)}</h2>
         <p class="statement">${renderStatement(asset)}</p>
         <p class="review review-${attr(asset.reviewState)}">${escapeHtml(reviewCopy(asset.reviewState))}</p>
       </header>
       ${renderAssessment(asset.assessment, asset.driftedFrom)}
       <div class="two-questions">
         <div class="why">${asset.claims.map(renderClaimProof).join('')}</div>
-        <div class="stronger">${renderImprovements(asset.improvements)}</div>
+        <div class="stronger">${renderImprovements(asset.improvements, asset.id)}</div>
       </div>
     </article>`;
 }
@@ -313,10 +320,11 @@ export function renderQuestions(questions: readonly QuestionView[]): string {
         <li class="question">
           <div class="question-unit">${escapeHtml(question.workUnitTitle)}</div>
           <form class="answer" data-gap="${attr(question.id)}">
-            <label>${escapeHtml(question.question)}</label>
-            <p class="why">${escapeHtml(question.rationale)}</p>
-            <textarea name="answer" rows="2" placeholder="In your own words…"></textarea>
+            <label for="question-answer-${attr(question.id)}">${escapeHtml(question.question)}</label>
+            <p class="why" id="question-rationale-${attr(question.id)}">${escapeHtml(question.rationale)}</p>
+            <textarea id="question-answer-${attr(question.id)}" name="answer" rows="2" maxlength="8000" placeholder="In your own words…" aria-describedby="question-rationale-${attr(question.id)} question-status-${attr(question.id)}"></textarea>
             <button type="submit">Record this as evidence</button>
+            <p id="question-status-${attr(question.id)}" class="recorded form-status" role="status" aria-live="polite"></p>
           </form>
         </li>`,
     )

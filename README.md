@@ -14,7 +14,6 @@ carry are **removed, not softened**.
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A5%2022-5FA04E.svg)](docs/install.md)
 [![API key](https://img.shields.io/badge/API%20key-not%20required-7aa2f7.svg)](docs/adr/0005-ai-is-additive.md)
-[![Tests](https://img.shields.io/badge/tests-953%20on%203%20platforms-success.svg)](.github/workflows/ci.yml)
 
 <img src="docs/assets/refusal.svg" alt="A model proposes four claims about a piece of work. Three are refused for want of evidence, each naming the question that would change the answer." width="640">
 
@@ -369,8 +368,8 @@ without being permitted to send your evidence anywhere.
 
 **Working today:** collection from Git and AI coding sessions, grouping into units of work,
 generation with every claim checked, the interview, the provenance graph, the egress gate,
-Evidence Explorer, and the guided tour. **953 tests, on three operating systems, on every
-commit.**
+Evidence Explorer, and the guided tour. **The full test suite runs on three operating systems
+on every commit.**
 
 **Not built yet:** out-of-process plugins, sync, analytics, a desktop shell, providers other
 than OpenAI, exporters other than Markdown. Each has a seam already in place and needs no

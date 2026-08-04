@@ -6,10 +6,29 @@ import {
   type Platform,
   type UlidFactory,
 } from '@careerforge/domain';
-import type { ComparableRun, RunFingerprint, ValidatedResponse } from '@careerforge/enrich';
 
 import type { Db } from './migrations/index.js';
 import { ProvenanceStore } from './provenance-store.js';
+
+/** Persistence contracts are structural so the store remains below enrich. */
+export interface RunFingerprintRecord {
+  readonly templateId: string;
+  readonly promptHash: string;
+  readonly paramsHash: string;
+  readonly inputHash: string;
+  readonly inputIds: readonly string[];
+  readonly providerId: string;
+  readonly model: string;
+}
+
+export interface ValidatedResponseRecord {
+  readonly items: readonly {
+    readonly value: Readonly<Record<string, unknown>>;
+    readonly evidence: readonly string[];
+  }[];
+  readonly rejections: readonly unknown[];
+  readonly unknownCitations: readonly string[];
+}
 
 /**
  * Where enrichment runs and their results are kept.
@@ -26,7 +45,7 @@ import { ProvenanceStore } from './provenance-store.js';
  */
 
 export interface RecordRunInput {
-  readonly fingerprint: RunFingerprint;
+  readonly fingerprint: RunFingerprintRecord;
   readonly target: { readonly kind: 'evidence' | 'work_unit'; readonly id: string };
   readonly enrichmentType: EnrichmentType;
   readonly resolvedModel: string | null;
@@ -34,11 +53,12 @@ export interface RecordRunInput {
   readonly redactionProfile: string;
   readonly status: 'completed' | 'refused' | 'unusable';
   readonly usage: { readonly inputTokens: number; readonly outputTokens: number };
-  readonly validated: ValidatedResponse | null;
+  readonly validated: ValidatedResponseRecord | null;
   readonly startedAt: Instant;
 }
 
-export interface StoredRun extends ComparableRun {
+export interface StoredRun extends RunFingerprintRecord {
+  readonly resolvedModel: string | null;
   readonly id: string;
   readonly targetKind: string;
   readonly targetId: string;
@@ -137,7 +157,9 @@ export class EnrichmentStore {
    * Refused and unusable runs are excluded deliberately: a failure must not
    * become permanent by being cached.
    */
-  findCached(fingerprint: RunFingerprint): { runId: string; fingerprint: RunFingerprint } | null {
+  findCached(
+    fingerprint: RunFingerprintRecord,
+  ): { runId: string; fingerprint: RunFingerprintRecord } | null {
     const row = this.db
       .prepare(
         `SELECT id FROM enrichment_runs

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { request } from 'node:http';
 import { fileURLToPath } from 'node:url';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -34,6 +35,41 @@ const platform = deterministicPlatform();
 let db: Db;
 let workUnitId: string;
 let evidenceIds: string[];
+
+function send(
+  url: string,
+  options: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+  } = {},
+): Promise<{ status: number; body: string }> {
+  const target = new URL(url);
+  return new Promise((resolve, reject) => {
+    const req = request(
+      {
+        hostname: target.hostname,
+        port: target.port,
+        path: `${target.pathname}${target.search}`,
+        method: options.method ?? 'GET',
+        headers: options.headers,
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+        response.on('data', (chunk: Buffer) => chunks.push(chunk));
+        response.on('end', () =>
+          resolve({
+            status: response.statusCode ?? 0,
+            body: Buffer.concat(chunks).toString('utf8'),
+          }),
+        );
+      },
+    );
+    req.on('error', reject);
+    if (options.body !== undefined) req.write(options.body);
+    req.end();
+  });
+}
 
 const draft = (n: number, overrides: Partial<EvidenceDraft> = {}): EvidenceDraft => ({
   collectorId: 'git',
@@ -138,6 +174,69 @@ describe('the server binds to this machine and nowhere else', () => {
     );
     expect(deps.sort()).toEqual(['@careerforge/domain', '@careerforge/store']);
   });
+
+  it('rejects an unexpected Host header before returning store data', async () => {
+    const explorer = await createExplorerServer({ db, port: 0 });
+    try {
+      const response = await send(`${explorer.url}api/view`, {
+        headers: { host: 'attacker.example' },
+      });
+      expect(response.status).toBe(421);
+      expect(response.body).not.toContain('assets');
+    } finally {
+      await explorer.close();
+    }
+  });
+
+  it('requires same-origin JSON and a per-launch token for writes', async () => {
+    seed();
+    const gapId = readExplorerView(db).questions[0]!.id;
+    const explorer = await createExplorerServer({ db, port: 0 });
+    try {
+      const host = new URL(explorer.url).host;
+      const page = await send(explorer.url);
+      const token = page.body.match(/name="careerforge-write-token" content="([^"]+)"/)?.[1];
+      expect(token).toBeTruthy();
+
+      const crossOrigin = await send(`${explorer.url}api/answer`, {
+        method: 'POST',
+        headers: {
+          host,
+          origin: 'https://attacker.example',
+          'content-type': 'application/json',
+          'x-careerforge-token': token!,
+        },
+        body: JSON.stringify({ gapId, answer: 'Injected answer' }),
+      });
+      expect(crossOrigin.status).toBe(403);
+
+      const wrongType = await send(`${explorer.url}api/answer`, {
+        method: 'POST',
+        headers: {
+          host,
+          origin: explorer.url.slice(0, -1),
+          'content-type': 'text/plain',
+          'x-careerforge-token': token!,
+        },
+        body: JSON.stringify({ gapId, answer: 'Injected answer' }),
+      });
+      expect(wrongType.status).toBe(415);
+
+      const accepted = await send(`${explorer.url}api/answer`, {
+        method: 'POST',
+        headers: {
+          host,
+          origin: explorer.url.slice(0, -1),
+          'content-type': 'application/json',
+          'x-careerforge-token': token!,
+        },
+        body: JSON.stringify({ gapId, answer: 'I led this work.' }),
+      });
+      expect(accepted.status).toBe(200);
+    } finally {
+      await explorer.close();
+    }
+  });
 });
 
 describe('the view a real store produces', () => {
@@ -168,6 +267,30 @@ describe('the view a real store produces', () => {
   it('counts what a fresh store holds', () => {
     const view = readExplorerView(db);
     expect(view.totals).toEqual({ evidence: 0, units: 0, assets: 0, questions: 0 });
+  });
+
+  it('bounds unit reads and keeps older work reachable by page', () => {
+    const evidence = new EvidenceStore(db, platform);
+    for (let n = 0; n < 30; n++) {
+      evidence.emit(
+        draft(n % 8, {
+          sourceUri: `git://repo/commit/page-${n}`,
+          occurredAt: toInstant(`2026-06-${String(n + 1).padStart(2, '0')}T09:00:00.000Z`),
+          context: { projectKey: `project-${n}`, workspace: null, stream: 'main' },
+        }),
+      );
+    }
+    new WorkUnitStore(db, platform).group();
+
+    const first = readExplorerView(db);
+    const second = readExplorerView(db, { page: 2 });
+
+    expect(first.units).toHaveLength(25);
+    expect(second.units).toHaveLength(5);
+    expect(first.totals.units).toBe(30);
+    expect(first.pagination).toEqual({ page: 1, pageSize: 25, totalPages: 2 });
+    expect(second.pagination.page).toBe(2);
+    expect(new Set([...first.units, ...second.units].map((unit) => unit.id))).toHaveLength(30);
   });
 });
 

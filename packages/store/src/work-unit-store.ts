@@ -473,6 +473,30 @@ export class WorkUnitStore {
     return rows.map(toWorkUnit);
   }
 
+  /** A bounded slice for interactive readers such as the Evidence Explorer. */
+  currentUnitsPage(limit: number, offset: number): readonly WorkUnit[] {
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM work_units_current
+         ORDER BY occurred_at DESC, id DESC LIMIT ? OFFSET ?`,
+      )
+      .all(Math.max(1, Math.trunc(limit)), Math.max(0, Math.trunc(offset))) as WorkUnitRow[];
+    return rows.map(toWorkUnit);
+  }
+
+  /** Member counts for a page of units in one query. */
+  memberCounts(workUnitIds: readonly string[]): ReadonlyMap<string, number> {
+    if (workUnitIds.length === 0) return new Map();
+    const placeholders = workUnitIds.map(() => '?').join(',');
+    const rows = this.db
+      .prepare(
+        `SELECT work_unit_id, COUNT(*) AS n FROM work_unit_members
+         WHERE work_unit_id IN (${placeholders}) GROUP BY work_unit_id`,
+      )
+      .all(...workUnitIds) as { work_unit_id: string; n: number }[];
+    return new Map(rows.map((row) => [row.work_unit_id, row.n]));
+  }
+
   byId(id: string): WorkUnit | null {
     const row = this.db.prepare(`SELECT * FROM work_units WHERE id = ?`).get(id) as
       WorkUnitRow | undefined;

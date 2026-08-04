@@ -10,15 +10,6 @@
   "references": [
     {
       "path": "../domain"
-    },
-    {
-      "path": "../enrich"
-    },
-    {
-      "path": "../generate"
-    },
-    {
-      "path": "../policy"
     }
   ]
 }

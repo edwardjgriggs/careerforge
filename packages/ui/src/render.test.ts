@@ -116,10 +116,12 @@ describe('the statement', () => {
     expect(html.match(/class="claim"/g)).toHaveLength(1);
   });
 
-  it('is keyboard reachable', () => {
+  it('uses a native button and exposes its selected state', () => {
     const html = renderStatement(asset());
-    expect(html).toContain('tabindex="0"');
+    expect(html).toContain('<button type="button"');
+    expect(html).toContain('aria-pressed="false"');
     expect(html).toContain('aria-label=');
+    expect(html).not.toContain('role="button"');
   });
 });
 
@@ -287,6 +289,9 @@ describe('what would make it stronger', () => {
     expect(html).toContain('data-gap="01G"');
     expect(html).toContain('Did you lead this work?');
     expect(html).toContain('<textarea');
+    expect(html).toContain('for="answer-01G"');
+    expect(html).toContain('id="answer-01G"');
+    expect(html).toContain('aria-live="polite"');
     expect(html).toContain('Record this as evidence');
   });
 
@@ -315,6 +320,7 @@ describe('the empty state', () => {
     assets: [],
     units: [],
     questions: [],
+    pagination: { page: 1, pageSize: 25, totalPages: 1 },
     totals: { evidence: 0, units: 0, assets: 0, questions: 0, ...overrides },
   });
 

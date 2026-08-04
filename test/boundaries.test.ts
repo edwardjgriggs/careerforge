@@ -254,4 +254,17 @@ describe('permitted dependencies still lint clean', () => {
     );
     expect(messages).toEqual([]);
   });
+
+  it('keeps store independent of enrichment, generation, and policy adapters', () => {
+    const manifest: unknown = JSON.parse(
+      readFileSync(join(ROOT, 'packages/store/package.json'), 'utf8'),
+    );
+    const dependencies = Object.keys(
+      (manifest as { dependencies?: Record<string, string> }).dependencies ?? {},
+    );
+    expect(dependencies.sort()).toEqual(['@careerforge/domain', 'better-sqlite3']);
+
+    const tsconfig = readFileSync(join(ROOT, 'packages/store/tsconfig.json'), 'utf8');
+    expect(tsconfig).not.toMatch(/\.\.\/(enrich|generate|policy)/);
+  });
 });

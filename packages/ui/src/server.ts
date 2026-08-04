@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 
 import type { Db } from '@careerforge/store';
@@ -47,6 +48,8 @@ const json = (response: ServerResponse, status: number, body: unknown): void => 
     // sniffed, or referred anywhere.
     'x-content-type-options': 'nosniff',
     'referrer-policy': 'no-referrer',
+    'cache-control': 'no-store',
+    'cross-origin-resource-policy': 'same-origin',
   });
   response.end(payload);
 };
@@ -57,11 +60,14 @@ const html = (response: ServerResponse, body: string): void => {
     'content-length': Buffer.byteLength(body),
     'x-content-type-options': 'nosniff',
     'referrer-policy': 'no-referrer',
+    'cache-control': 'no-store',
+    'cross-origin-resource-policy': 'same-origin',
+    'x-frame-options': 'DENY',
     // Everything is inlined, so the page needs nothing from anywhere. Saying
     // so means a compromised dependency further up cannot quietly add a
     // request to a page that displays somebody's career history.
     'content-security-policy':
-      "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; form-action 'none'",
+      "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; form-action 'none'; frame-ancestors 'none'",
   });
   response.end(body);
 };
@@ -89,22 +95,46 @@ export async function handle(
   db: Db,
   request: IncomingMessage,
   response: ServerResponse,
+  security: { readonly authority: string; readonly origin: string; readonly writeToken: string },
 ): Promise<void> {
   const method = request.method ?? 'GET';
-  const path = (request.url ?? '/').split('?')[0];
 
   try {
+    if ((request.headers['host'] ?? '').trim().toLowerCase() !== security.authority) {
+      json(response, 421, { error: 'Unexpected request authority.' });
+      return;
+    }
+    const target = new URL(request.url ?? '/', security.origin);
+    const path = target.pathname;
+    const requestedPage = Number.parseInt(target.searchParams.get('page') ?? '1', 10);
+    const page = Number.isFinite(requestedPage) ? requestedPage : 1;
+
     if (method === 'GET' && (path === '/' || path === '/index.html')) {
-      html(response, renderPage(readExplorerView(db)));
+      html(response, renderPage(readExplorerView(db, { page }), security.writeToken));
       return;
     }
 
     if (method === 'GET' && path === '/api/view') {
-      json(response, 200, readExplorerView(db));
+      json(response, 200, readExplorerView(db, { page }));
       return;
     }
 
     if (method === 'POST' && path === '/api/answer') {
+      if (request.headers.origin !== security.origin) {
+        json(response, 403, { error: 'Writes require the Explorer origin.' });
+        return;
+      }
+      if (
+        request.headers['content-type']?.split(';', 1)[0]?.trim().toLowerCase() !==
+        'application/json'
+      ) {
+        json(response, 415, { error: 'Writes require application/json.' });
+        return;
+      }
+      if (request.headers['x-careerforge-token'] !== security.writeToken) {
+        json(response, 403, { error: 'The Explorer write token is missing or invalid.' });
+        return;
+      }
       const body = JSON.parse(await readBody(request)) as { gapId?: unknown; answer?: unknown };
       if (typeof body.gapId !== 'string' || typeof body.answer !== 'string') {
         json(response, 400, { error: 'gapId and answer are required.' });
@@ -112,6 +142,10 @@ export async function handle(
       }
       if (body.answer.trim() === '') {
         json(response, 400, { error: 'An empty answer is not evidence.' });
+        return;
+      }
+      if (body.answer.length > 8_000) {
+        json(response, 400, { error: 'Answers are limited to 8,000 characters.' });
         return;
       }
       json(response, 200, recordAnswer(db, body.gapId, body.answer.trim()));
@@ -130,8 +164,15 @@ export async function handle(
 
 export function createExplorerServer(options: ExplorerServerOptions): Promise<ExplorerServer> {
   const port = options.port ?? DEFAULT_PORT;
+  let security:
+    | { readonly authority: string; readonly origin: string; readonly writeToken: string }
+    | undefined;
   const server = createServer((request, response) => {
-    void handle(options.db, request, response);
+    if (security === undefined) {
+      json(response, 503, { error: 'Explorer is starting.' });
+      return;
+    }
+    void handle(options.db, request, response, security);
   });
 
   return new Promise((resolve, reject) => {
@@ -143,9 +184,15 @@ export function createExplorerServer(options: ExplorerServerOptions): Promise<Ex
       server.removeListener('error', reject);
       const address = server.address();
       const actual = typeof address === 'object' && address !== null ? address.port : port;
+      const authority = `${BIND_HOST}:${actual}`;
+      security = {
+        authority,
+        origin: `http://${authority}`,
+        writeToken: randomBytes(32).toString('base64url'),
+      };
       resolve({
         server,
-        url: `http://${BIND_HOST}:${actual}/`,
+        url: `${security.origin}/`,
         close: () =>
           new Promise<void>((done, fail) =>
             server.close((error) => (error ? fail(error) : done())),

@@ -511,7 +511,7 @@ describe('an AI output is a reviewable artifact, never an authority', () => {
     const provider = createOpenAIProvider({ apiKey: undefined });
     const allowed = evaluate(
       {
-        provider: { id: 'ollama', locality: 'local' },
+        provider: { id: 'openai', locality: 'remote' },
         purpose: 'enrich',
         items: [
           {
@@ -523,7 +523,14 @@ describe('an AI output is a reviewable artifact, never an authority', () => {
           },
         ],
       },
-      { consent: () => null },
+      {
+        consent: () => ({
+          projectKey: null,
+          providerId: 'openai',
+          maxSensitivity: 'public',
+          revoked: false,
+        }),
+      },
     );
 
     try {
@@ -807,6 +814,7 @@ describe('the Explorer explains rather than displays', () => {
       units: [],
       questions: [],
       totals: { evidence: 0, units: 0, assets: 0, questions: 0 },
+      pagination: { page: 1, pageSize: 25, totalPages: 1 },
     });
     expect(page).not.toMatch(/<script[^>]+src=/i);
     expect(page).not.toMatch(/<link[^>]+href=/i);

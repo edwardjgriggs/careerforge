@@ -192,6 +192,20 @@ export function createOpenAIProvider(config: OpenAIConfig): ProviderPort {
   return async (call) => {
     assertTransmittable(call);
 
+    if (call.decision.providerId !== 'openai') {
+      throw new ProviderRefusedError([
+        {
+          code: 'provider_mismatch',
+          rule: 'provider-identity@1',
+          reason: `The OpenAI adapter cannot execute a policy decision for ${call.decision.providerId}.`,
+          remedy: {
+            kind: 'not_possible',
+            detail: 'Use the adapter whose identity matches the provider evaluated by policy.',
+          },
+        },
+      ]);
+    }
+
     if (config.apiKey === undefined || config.apiKey === '') {
       throw new ProviderRefusedError([
         {

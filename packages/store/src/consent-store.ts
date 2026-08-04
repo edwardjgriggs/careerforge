@@ -4,10 +4,10 @@ import {
   toInstant,
   type Instant,
   type Platform,
+  type Refusal,
   type Sensitivity,
   type UlidFactory,
 } from '@careerforge/domain';
-import type { ConsentGrant, PolicyDecision } from '@careerforge/policy';
 
 import type { Db } from './migrations/index.js';
 
@@ -20,10 +20,28 @@ import type { Db } from './migrations/index.js';
  * means this file has no opinions of its own about what should be permitted.
  */
 
-export interface StoredGrant extends ConsentGrant {
+export interface StoredGrant {
   readonly id: string;
+  readonly projectKey: string | null;
+  readonly providerId: string;
+  readonly maxSensitivity: Sensitivity;
+  readonly revoked: boolean;
   readonly reason: string | null;
   readonly recordedAt: Instant;
+}
+
+/** Persistence shape kept local so the store does not depend on policy. */
+export interface PolicyDecisionRecord {
+  readonly allowed: boolean;
+  readonly providerId: string;
+  readonly purpose: string;
+  readonly maxSensitivity: Sensitivity;
+  readonly projectKeys: readonly string[];
+  readonly itemCount: number;
+  readonly refusals: readonly Refusal[];
+  readonly payload: string;
+  readonly redaction: { readonly profile: string };
+  readonly payloadHash: string | null;
 }
 
 interface GrantRow {
@@ -178,7 +196,7 @@ export class ConsentStore {
    * permitted calls would answer "what left?" and not "what was attempted?",
    * and the second question is the one a user asks after a scare.
    */
-  recordDecision(decision: PolicyDecision): string {
+  recordDecision(decision: PolicyDecisionRecord): string {
     const id = this.nextId() as string;
     this.db
       .prepare(

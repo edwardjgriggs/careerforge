@@ -114,6 +114,24 @@ describe('the guard at the wire', () => {
 });
 
 describe('the OpenAI adapter', () => {
+  it('refuses a policy decision issued for a different provider', async () => {
+    const doFetch = stubFetch({ skills: [] });
+    const provider = createOpenAIProvider({ apiKey: 'sk-test', fetchImpl: doFetch });
+    const localDecision = evaluate(
+      {
+        provider: { id: 'ollama', locality: 'local' },
+        purpose: 'enrich',
+        items: [item('restricted local work')],
+      },
+      { consent: () => null },
+    );
+
+    await expect(provider(callWith(localDecision))).rejects.toMatchObject({
+      refusals: [expect.objectContaining({ rule: 'provider-identity@1' })],
+    });
+    expect(doFetch).not.toHaveBeenCalled();
+  });
+
   it('sends the decision payload and nothing else derived from evidence', async () => {
     const doFetch = stubFetch({ skills: [] });
     const provider = createOpenAIProvider({ apiKey: 'sk-test', fetchImpl: doFetch });

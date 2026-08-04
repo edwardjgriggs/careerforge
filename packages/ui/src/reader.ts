@@ -229,25 +229,49 @@ function assetView(db: Db, stores: Stores, assetId: string): AssetView | null {
   };
 }
 
-export function readExplorerView(db: Db): ExplorerView {
+const DEFAULT_PAGE_SIZE = 25;
+const MAX_PAGE_SIZE = 50;
+const MAX_ASSETS_PER_PAGE = 100;
+const MAX_QUESTIONS_PER_PAGE = 100;
+
+export function readExplorerView(
+  db: Db,
+  options: { readonly page?: number; readonly pageSize?: number } = {},
+): ExplorerView {
   const stores = openStores(db);
 
-  const units = stores.units.currentUnits();
-  const assets = units
-    .flatMap((unit) => stores.assets.forWorkUnit(unit.id))
+  const requestedPageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
+  const pageSize = Number.isFinite(requestedPageSize)
+    ? Math.min(MAX_PAGE_SIZE, Math.max(1, Math.trunc(requestedPageSize)))
+    : DEFAULT_PAGE_SIZE;
+  const totalUnits = stores.units.count();
+  const totalPages = Math.max(1, Math.ceil(totalUnits / pageSize));
+  const requestedPage = options.page ?? 1;
+  const page = Number.isFinite(requestedPage)
+    ? Math.min(totalPages, Math.max(1, Math.trunc(requestedPage)))
+    : 1;
+  const units = stores.units.currentUnitsPage(pageSize, (page - 1) * pageSize);
+  const unitIds = units.map((unit) => unit.id);
+  const pageAssets = stores.assets.forWorkUnits(unitIds, MAX_ASSETS_PER_PAGE);
+  const pageGaps = stores.provenance.openGapsForWorkUnits(unitIds, MAX_QUESTIONS_PER_PAGE);
+  const memberCounts = stores.units.memberCounts(unitIds);
+  const assetCounts = stores.assets.countsForWorkUnits(unitIds);
+  const gapCounts = stores.provenance.openGapCountsForWorkUnits(unitIds);
+
+  const assets = pageAssets
     .map((asset) => assetView(db, stores, asset.id))
     .filter((view): view is AssetView => view !== null);
 
   const unitViews: UnitView[] = units.map((unit) => ({
     id: unit.id,
     title: unit.title,
-    recordCount: stores.units.memberIds(unit.id).length,
+    recordCount: memberCounts.get(unit.id) ?? 0,
     occurredAt: unit.occurredAt,
-    assetCount: stores.assets.forWorkUnit(unit.id).length,
-    openQuestionCount: stores.provenance.openGaps(unit.id).length,
+    assetCount: assetCounts.get(unit.id) ?? 0,
+    openQuestionCount: gapCounts.get(unit.id) ?? 0,
   }));
 
-  const questions: QuestionView[] = stores.provenance.openGaps().map((gap) => ({
+  const questions: QuestionView[] = pageGaps.map((gap) => ({
     id: gap.id,
     workUnitId: gap.workUnitId,
     workUnitTitle: units.find((unit) => unit.id === gap.workUnitId)?.title ?? '(unknown work)',
@@ -259,6 +283,19 @@ export function readExplorerView(db: Db): ExplorerView {
   const evidenceCount = (
     db.prepare(`SELECT COUNT(*) AS n FROM evidence_current`).get() as { n: number }
   ).n;
+  const assetCount = (
+    db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM assets a
+         WHERE NOT EXISTS (SELECT 1 FROM assets s WHERE s.supersedes = a.id)`,
+      )
+      .get() as { n: number }
+  ).n;
+  const questionCount = (
+    db.prepare(`SELECT COUNT(*) AS n FROM gaps_current WHERE status = 'open'`).get() as {
+      n: number;
+    }
+  ).n;
 
   return {
     assets,
@@ -266,10 +303,11 @@ export function readExplorerView(db: Db): ExplorerView {
     questions,
     totals: {
       evidence: evidenceCount,
-      units: units.length,
-      assets: assets.length,
-      questions: questions.length,
+      units: totalUnits,
+      assets: assetCount,
+      questions: questionCount,
     },
+    pagination: { page, pageSize, totalPages },
   };
 }
 

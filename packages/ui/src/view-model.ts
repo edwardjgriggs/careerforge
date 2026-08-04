@@ -96,6 +96,11 @@ export interface ExplorerView {
     readonly assets: number;
     readonly questions: number;
   };
+  readonly pagination: {
+    readonly page: number;
+    readonly pageSize: number;
+    readonly totalPages: number;
+  };
 }
 
 /**

@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { toInstant } from '@careerforge/domain';
 import {
@@ -776,6 +776,24 @@ describe('enrich', () => {
     const result = await run(['enrich', '--unit', unitId], env);
     expect(result.stdout).toContain('consent-required@1');
     expect(result.stdout).not.toContain('OPENAI_API_KEY');
+  });
+
+  it('never routes a local-provider decision through the OpenAI transport', async () => {
+    const { unitId } = await seedUnit();
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new Error('The wrong adapter reached the network.'));
+    try {
+      const result = await run(['enrich', '--unit', unitId, '--provider', 'ollama'], {
+        ...env,
+        OPENAI_API_KEY: 'configured-but-irrelevant',
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain('provider-not-implemented@1');
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 
   it('shows the prompt and the payload on a dry run without needing a key', async () => {

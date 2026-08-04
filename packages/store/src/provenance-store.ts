@@ -537,6 +537,34 @@ export class ProvenanceStore implements ProvenanceLookup {
     return rows.map(toGap);
   }
 
+  /** Open questions for a bounded page of units, read in one query. */
+  openGapsForWorkUnits(workUnitIds: readonly string[], limit = 100): readonly Gap[] {
+    if (workUnitIds.length === 0) return [];
+    const placeholders = workUnitIds.map(() => '?').join(',');
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM gaps_current
+         WHERE status = 'open' AND work_unit_id IN (${placeholders})
+         ORDER BY id LIMIT ?`,
+      )
+      .all(...workUnitIds, Math.max(1, Math.trunc(limit))) as GapRow[];
+    return rows.map(toGap);
+  }
+
+  /** Open-question counts for a page of units in one query. */
+  openGapCountsForWorkUnits(workUnitIds: readonly string[]): ReadonlyMap<string, number> {
+    if (workUnitIds.length === 0) return new Map();
+    const placeholders = workUnitIds.map(() => '?').join(',');
+    const rows = this.db
+      .prepare(
+        `SELECT work_unit_id, COUNT(*) AS n FROM gaps_current
+         WHERE status = 'open' AND work_unit_id IN (${placeholders})
+         GROUP BY work_unit_id`,
+      )
+      .all(...workUnitIds) as { work_unit_id: string; n: number }[];
+    return new Map(rows.map((row) => [row.work_unit_id, row.n]));
+  }
+
   gapById(gapId: string): Gap | null {
     const row = this.db.prepare(`SELECT * FROM gaps_current WHERE id = ?`).get(gapId) as
       GapRow | undefined;

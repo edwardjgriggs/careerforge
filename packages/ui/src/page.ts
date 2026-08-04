@@ -29,12 +29,14 @@ const STYLE = `
     --warn: #e0af68;
     --bad: #f7768e;
     --stated: #bb9af7;
+    --accent-contrast: #0b0d11;
   }
   @media (prefers-color-scheme: light) {
     :root {
       --bg: #f7f8fa; --panel: #ffffff; --panel-2: #f2f4f7; --line: #dde1e7;
       --text: #1a1d23; --dim: #5b6472; --accent: #2f5fd0; --good: #1f7a4d;
       --warn: #9a6b00; --bad: #b3243c; --stated: #6b3fbf;
+      --accent-contrast: #ffffff;
     }
   }
   * { box-sizing: border-box; }
@@ -43,6 +45,11 @@ const STYLE = `
     font: 15px/1.55 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   code, .statement { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .skip-link {
+    position: absolute; left: 12px; top: -80px; z-index: 10;
+    background: var(--panel); color: var(--text); padding: 8px 12px; border: 2px solid var(--accent);
+  }
+  .skip-link:focus { top: 12px; }
   header.top {
     padding: 18px 28px; border-bottom: 1px solid var(--line);
     display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
@@ -65,9 +72,13 @@ const STYLE = `
 
   .claim {
     border-bottom: 2px solid var(--accent); cursor: pointer;
-    padding-bottom: 1px; transition: background .12s;
+    padding: 0 0 1px; margin: 0; border-radius: 0; background: transparent;
+    color: inherit; font: inherit; font-weight: inherit; transition: background .12s;
   }
-  .claim:hover, .claim:focus, .claim.active { background: color-mix(in srgb, var(--accent) 22%, transparent); outline: none; }
+  .claim:hover, .claim.active { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+  .claim:focus-visible, button:focus-visible, textarea:focus-visible, a:focus-visible {
+    outline: 3px solid var(--accent); outline-offset: 3px;
+  }
   .claim-type {
     font-size: 9px; color: var(--dim); margin-left: 2px;
     text-transform: uppercase; letter-spacing: .04em; font-family: ui-sans-serif, sans-serif;
@@ -162,12 +173,13 @@ const STYLE = `
     resize: vertical;
   }
   button {
-    margin-top: 8px; background: var(--accent); color: #0b0d11; border: 0;
+    margin-top: 8px; background: var(--accent); color: var(--accent-contrast); border: 0;
     border-radius: 6px; padding: 7px 14px; font: inherit; font-size: 13px;
     font-weight: 600; cursor: pointer;
   }
   button:disabled { opacity: .55; cursor: default; }
   .recorded { color: var(--good); font-size: 13px; margin-top: 8px; }
+  .form-status:empty { min-height: 0; margin: 0; }
 
   .empty-state { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 28px; }
   .empty-state h2 { margin: 0 0 8px; font-size: 20px; }
@@ -186,6 +198,12 @@ const STYLE = `
   .questions { list-style: none; padding: 0; }
   .question { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; background: var(--panel); }
   .question-unit { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--dim); margin-bottom: 6px; }
+  .pagination { display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; align-items: center; margin-top: 24px; color: var(--dim); }
+  .pagination a { color: var(--accent); }
+  .pagination a:last-child { justify-self: end; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+  }
 `;
 
 /**
@@ -199,24 +217,23 @@ const STYLE = `
 const SCRIPT = `
   function selectClaim(assetEl, claimId) {
     assetEl.querySelectorAll('.claim').forEach(function (el) {
-      el.classList.toggle('active', el.dataset.claim === claimId);
+      var selected = el.dataset.claim === claimId;
+      el.classList.toggle('active', selected);
+      el.setAttribute('aria-pressed', String(selected));
     });
     assetEl.querySelectorAll('.proof').forEach(function (el) {
       var match = el.dataset.proof === claimId;
       el.classList.toggle('active', match);
-      if (match) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      if (match) {
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        el.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
+      }
     });
   }
 
   document.addEventListener('click', function (event) {
     var claim = event.target.closest('.claim');
     if (claim) selectClaim(claim.closest('.asset'), claim.dataset.claim);
-  });
-
-  document.addEventListener('keydown', function (event) {
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    var claim = event.target.closest('.claim');
-    if (claim) { event.preventDefault(); selectClaim(claim.closest('.asset'), claim.dataset.claim); }
   });
 
   document.addEventListener('submit', async function (event) {
@@ -226,21 +243,30 @@ const SCRIPT = `
 
     var button = form.querySelector('button');
     var text = form.querySelector('textarea').value.trim();
+    var status = form.querySelector('[role="status"]');
     if (text === '') return;
 
     button.disabled = true;
     button.textContent = 'Recording…';
 
-    var response = await fetch('/api/answer', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ gapId: form.dataset.gap, answer: text }),
-    });
+    status.textContent = 'Recording answer…';
+    var response;
+    try {
+      var token = document.querySelector('meta[name="careerforge-write-token"]').content;
+      response = await fetch('/api/answer', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-careerforge-token': token },
+        body: JSON.stringify({ gapId: form.dataset.gap, answer: text }),
+      });
+    } catch (_) {
+      response = { ok: false };
+    }
 
     if (!response.ok) {
       button.disabled = false;
       button.textContent = 'Record this as evidence';
-      form.insertAdjacentHTML('beforeend', '<p class="recorded" style="color:var(--bad)">Could not record that.</p>');
+      status.style.color = 'var(--bad)';
+      status.textContent = 'Could not record that answer.';
       return;
     }
 
@@ -258,48 +284,62 @@ const SCRIPT = `
   });
 `;
 
-export function renderPage(view: ExplorerView): string {
+export function renderPage(view: ExplorerView, writeToken = ''): string {
   const empty = renderEmptyState(view);
+  const unitList =
+    view.units.length === 0
+      ? ''
+      : `<h2>Your work</h2><ul class="units">${view.units
+          .map(
+            (unit) => `<li>
+              <span>${escapeHtml(unit.title)}</span>
+              <span class="meta">${unit.recordCount} record(s) · ${unit.openQuestionCount} question(s) · <code>${escapeHtml(unit.id)}</code></span>
+            </li>`,
+          )
+          .join('')}</ul>`;
 
   const body =
     empty !== ''
-      ? empty +
-        (view.units.length === 0
-          ? ''
-          : `<h3>Your work</h3><ul class="units">${view.units
-              .map(
-                (unit) => `<li>
-                  <span>${escapeHtml(unit.title)}</span>
-                  <span class="meta">${unit.recordCount} record(s) · ${unit.openQuestionCount} question(s) · <code>${escapeHtml(unit.id)}</code></span>
-                </li>`,
-              )
-              .join('')}</ul>`)
-      : view.assets.map(renderAsset).join('');
+      ? empty + unitList
+      : view.assets.length === 0
+        ? unitList
+        : view.assets.map(renderAsset).join('');
 
   const questions =
     empty === '' && view.questions.length > 0
-      ? `<h3>Every open question</h3>
+      ? `<h2>Every open question</h2>
          <p class="empty">Answering any of these makes something you have already written stronger.</p>
          ${renderQuestions(view.questions)}`
       : '';
+  const pagination =
+    view.pagination.totalPages <= 1
+      ? ''
+      : `<nav class="pagination" aria-label="Evidence pages">
+          ${view.pagination.page > 1 ? `<a href="/?page=${view.pagination.page - 1}">Previous</a>` : '<span></span>'}
+          <span>Page ${view.pagination.page} of ${view.pagination.totalPages}</span>
+          ${view.pagination.page < view.pagination.totalPages ? `<a href="/?page=${view.pagination.page + 1}">Next</a>` : '<span></span>'}
+        </nav>`;
 
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="careerforge-write-token" content="${escapeHtml(writeToken)}">
 <title>Evidence Explorer · CareerForge</title>
 <style>${STYLE}</style>
 </head>
 <body>
+<a class="skip-link" href="#explorer">Skip to evidence</a>
 <header class="top">
   <h1>Evidence Explorer</h1>
   <span class="totals">${view.totals.evidence} record(s) · ${view.totals.units} unit(s) · ${view.totals.assets} statement(s) · ${view.totals.questions} question(s)</span>
   <span class="local">Served from your machine. Nothing on this page has left it.</span>
 </header>
-<main>
+<main id="explorer" tabindex="-1">
 ${body}
 ${questions}
+${pagination}
 </main>
 <script>${SCRIPT}</script>
 </body>
