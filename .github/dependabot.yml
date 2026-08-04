@@ -26,10 +26,18 @@ updates:
     # They are recorded here with the reason so that the next person — or the
     # next version of me — does not spend an afternoon rediscovering it.
     ignore:
-      # 13.x ships no prebuilt binary for Windows, so npm falls back to
-      # `node-gyp rebuild` and the verify job fails on the platform this
-      # project claims as first-class. Held at 12.x deliberately. Revisit when
-      # 13.x publishes a win32-x64 prebuild.
+      # 13.x does ship a Windows prebuilt binary — bundled in the tarball as
+      # prebuilds/win32-x64.node, Node-API, one per platform instead of one per
+      # ABI. Nothing needs compiling. The trouble is that 13.x still ships
+      # binding.gyp while no longer defining an install script, and npm's
+      # documented default for that combination is to run `node-gyp rebuild`
+      # anyway. On node 24 npm 11's allow-scripts gate declines to run it and
+      # the bundled prebuild is used; on node 22 npm 10 has no such gate, runs
+      # it, and node-gyp 11.5.0 cannot parse the runner's Visual Studio 18.
+      # Held at 12.x deliberately. Not worked around in CI on purpose: the same
+      # implicit build runs for anyone installing this on Windows with npm 10,
+      # so a green verify job would only be hiding it. Revisit when upstream
+      # sets "gypfile": false or restores a no-op install script.
       - dependency-name: better-sqlite3
         versions: ['13.x']
       # typescript-eslint 8.x peer-depends on a TypeScript range that 7.x is
